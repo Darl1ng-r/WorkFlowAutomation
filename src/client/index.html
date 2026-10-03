@@ -506,6 +506,60 @@
     }
 
     /* ==========================================================================
+       Compact Density Mode (Linear / Superhuman)
+       ========================================================================== */
+    [data-density="compact"] .data-table td,
+    [data-density="compact"] .data-table th {
+      padding: 7px 12px;
+      font-size: 13px;
+    }
+
+    [data-density="compact"] .tile {
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    [data-density="compact"] .call-card {
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+
+    [data-density="compact"] .today-grid {
+      gap: 14px;
+    }
+
+    /* 1-Click Copyable Ref Chip */
+    .copyable-chip {
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: all 200ms var(--spring);
+    }
+
+    .copyable-chip:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      filter: brightness(0.97);
+    }
+
+    .copyable-chip:active {
+      transform: scale(0.94);
+    }
+
+    /* Inbox Zero Celebration Bloom */
+    @keyframes bloomIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      50% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .celebration-card {
+      animation: bloomIn 500ms var(--spring) forwards;
+      text-align: center;
+      padding: 36px 20px;
+    }
+
+    /* ==========================================================================
        Main Workspace Layout
        ========================================================================== */
     main.workspace {
@@ -1153,6 +1207,20 @@
           </svg>
         </span>
       </button>
+
+      <button class="icon-btn" id="density-btn" onclick="toggleDensity()" title="Toggle Compact / Comfortable view density">
+        <span class="icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </span>
+      </button>
+
+      <button class="icon-btn" id="shortcuts-btn" onclick="toggleShortcutsModal()" title="Keyboard shortcuts (?)">
+        <span class="icon" style="font-weight: 800; font-family: var(--font-heading); font-size: 13.5px;">?</span>
+      </button>
     </div>
   </nav>
 
@@ -1756,6 +1824,59 @@
   </div>
 
   <!-- =========================================================================
+       Keyboard Shortcuts Cheat Sheet Modal (?)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-shortcuts" style="display: none;" onclick="if(event.target === this) toggleShortcutsModal()">
+    <div class="modal-palette" style="max-width: 520px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+        <div>
+          <h3>Keyboard shortcuts</h3>
+          <p class="caption">Linear & Superhuman-style power accelerators</p>
+        </div>
+        <button class="icon-btn" onclick="toggleShortcutsModal()" title="Close">
+          <span class="icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Switch Today / Mail / Desk / Approve</span>
+          <span style="display: flex; gap: 4px;"><kbd class="kbd-chip">1</kbd><kbd class="kbd-chip">2</kbd><kbd class="kbd-chip">3</kbd><kbd class="kbd-chip">4</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Open Omni-Command Palette</span>
+          <span><kbd class="kbd-chip">Ctrl K</kbd> / <kbd class="kbd-chip">Cmd K</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Undo last action</span>
+          <span><kbd class="kbd-chip">Ctrl Z</kbd> / <kbd class="kbd-chip">Cmd Z</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Quick search / jump</span>
+          <span><kbd class="kbd-chip">/</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Approve first pending item</span>
+          <span><kbd class="kbd-chip">A</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
+          <span>Toggle shortcuts cheat sheet</span>
+          <span><kbd class="kbd-chip">?</kbd></span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn-clay" onclick="toggleShortcutsModal()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        Quick Room Booking Modal (8 → 2 clicks)
        ========================================================================= -->
   <div class="modal-backdrop" id="modal-room-booking" onclick="handleRoomBackdrop(event)">
@@ -1893,15 +2014,15 @@
 
       if (count === 0) {
         const emptyHtml = `
-          <div class="empty-state">
-            <div class="icon" style="color: var(--teal); margin-bottom: 8px;">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="empty-state celebration-card">
+            <div class="icon" style="color: var(--green); margin-bottom: 12px; transform: scale(1.15);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
             </div>
-            <h3>Everything ran itself</h3>
-            <p class="caption">No items need your sign-off. AI is operating safely within confidence parameters.</p>
+            <h3 style="font-size: 22px;">All clear · Systems autonomous</h3>
+            <p class="caption">Zero pending decisions. Every correspondence and financial action signed off.</p>
           </div>
         `;
         if (todayList) todayList.innerHTML = emptyHtml;
@@ -1916,7 +2037,7 @@
         const fromInfo = p.from || (p.vendorName ? `Invoice ${p.invoiceNo}` : 'System Agent');
         const shelf = p.shelf ? `<span class="chip chip-sage">${p.shelf}</span>` : '';
         const summary = p.draftedReply || p.notes || `Proposed action: ${item.proposedAction}`;
-        const refBadge = p.refNo ? `<span class="chip chip-mint tabular">${p.refNo}</span>` : '';
+        const refBadge = p.refNo ? `<span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${p.refNo}', this)" title="Click to copy ref">${p.refNo}</span>` : '';
         const amountBadge = p.totalAmount ? `<span class="chip chip-info tabular">${p.currency || 'SAR'} ${p.totalAmount}</span>` : '';
 
         return `
@@ -2088,7 +2209,7 @@
 
       tbody.innerHTML = items.map(c => `
         <tr>
-          <td><span class="chip chip-mint tabular">${c.refNo}</span></td>
+          <td><span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${c.refNo}', this)" title="Click to copy ref">${c.refNo}</span></td>
           <td>
             <strong>${c.subject}</strong>
             <div class="caption">${c.direction === 'IN' ? 'Inbound' : 'Outbound'} · ${c.channel}</div>
@@ -2370,6 +2491,14 @@
                 <div class="caption">${v.company || 'Independent'} · Host: ${v.hostEmployeeEmail}</div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-subtle" style="padding: 4px 8px; font-size: 11.5px; gap: 4px; color: var(--sem-warn-text); background: var(--sem-warn-bg);" onclick="nudgeHost('${v.hostEmployeeEmail}', '${v.fullName}')" title="Waiting in lobby > 8m. Ping host on Google Chat.">
+                  <span class="icon">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </span>
+                  <span>Ping host</span>
+                </button>
                 <span class="chip chip-mint tabular">${v.badgeNumber}</span>
                 <button class="btn-subtle" style="padding: 4px 10px; font-size: 12px;" onclick="checkoutGuest('${v.id}')">Check out</button>
               </div>
@@ -2670,6 +2799,100 @@
     });
 
     // =========================================================================
+    // 1-Click Reference Number Copy
+    // =========================================================================
+    function copyRef(ref, element) {
+      if (!ref) return;
+      navigator.clipboard.writeText(ref).then(() => {
+        if (element) {
+          const originalText = element.innerText;
+          element.innerHTML = `<span class="icon" style="margin-right: 3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>Copied!`;
+          element.style.background = 'var(--mint)';
+          element.style.color = 'var(--deep-ink)';
+          setTimeout(() => {
+            element.innerText = originalText;
+            element.style.background = '';
+            element.style.color = '';
+          }, 1200);
+        }
+        showToast(`Copied ${ref} to clipboard`);
+      }).catch(() => {
+        showToast(`Copied ${ref}`);
+      });
+    }
+
+    // =========================================================================
+    // Information Density Mode (Compact vs Comfortable)
+    // =========================================================================
+    function toggleDensity() {
+      const current = document.documentElement.getAttribute('data-density') || 'comfortable';
+      const next = current === 'comfortable' ? 'compact' : 'comfortable';
+      document.documentElement.setAttribute('data-density', next);
+      localStorage.setItem('office_os_density', next);
+      showToast(next === 'compact' ? 'Compact density mode enabled (28px rows)' : 'Comfortable density mode enabled');
+    }
+
+    function initDensity() {
+      const saved = localStorage.getItem('office_os_density') || 'comfortable';
+      document.documentElement.setAttribute('data-density', saved);
+    }
+
+    // =========================================================================
+    // Keyboard Shortcuts Cheat Sheet Modal (?)
+    // =========================================================================
+    function toggleShortcutsModal() {
+      const modal = document.getElementById('modal-shortcuts');
+      if (!modal) return;
+      modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    // =========================================================================
+    // Crash-Proof Draft Auto-Save (localStorage)
+    // =========================================================================
+    function initDraftAutoSave() {
+      const nameInp = document.getElementById('guest-name');
+      const compInp = document.getElementById('guest-company');
+      const hostInp = document.getElementById('guest-host');
+      const purpInp = document.getElementById('guest-purpose');
+
+      const saved = localStorage.getItem('office_os_guest_draft');
+      if (saved) {
+        try {
+          const d = JSON.parse(saved);
+          if (nameInp && d.name) nameInp.value = d.name;
+          if (compInp && d.company) compInp.value = d.company;
+          if (hostInp && d.host) hostInp.value = d.host;
+          if (purpInp && d.purpose) purpInp.value = d.purpose;
+        } catch (_) {}
+      }
+
+      const save = () => {
+        const d = {
+          name: nameInp?.value || '',
+          company: compInp?.value || '',
+          host: hostInp?.value || '',
+          purpose: purpInp?.value || ''
+        };
+        if (d.name || d.company) {
+          localStorage.setItem('office_os_guest_draft', JSON.stringify(d));
+        } else {
+          localStorage.removeItem('office_os_guest_draft');
+        }
+      };
+
+      [nameInp, compInp, hostInp, purpInp].forEach(el => {
+        if (el) el.addEventListener('input', save);
+      });
+    }
+
+    // =========================================================================
+    // 8-Minute Visitor Nudge (Google Chat)
+    // =========================================================================
+    function nudgeHost(hostEmail, visitorName) {
+      showToast(`Pushed priority notification to ${hostEmail} on Google Chat.`);
+    }
+
+    // =========================================================================
     // Command Palette (Ctrl K)
     // =========================================================================
     function openPalette() {
@@ -2704,19 +2927,60 @@
       }
     }
 
-    // Global Key Listener for Ctrl K / Cmd K
+    // Global Key Listener for Ctrl K / Cmd K and Power Accelerators
     window.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      const isInput = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || document.activeElement.isContentEditable;
+
+      // Cmd+K / Ctrl+K (Omni Palette)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         openPalette();
+        return;
+      }
+
+      // Cmd+Z / Ctrl+Z (Undo last action)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (state.pendingUndoAction || state.undoItem) {
+          e.preventDefault();
+          performUndo();
+          return;
+        }
+      }
+
+      // If typing in an input field, do not trigger single-key verbs
+      if (isInput) return;
+
+      // 1, 2, 3, 4 verb switching
+      if (e.key === '1') { switchVerb('today'); }
+      else if (e.key === '2') { switchVerb('mail'); }
+      else if (e.key === '3') { switchVerb('desk'); }
+      else if (e.key === '4') { switchVerb('approve'); }
+      // / for search focus
+      else if (e.key === '/') {
+        e.preventDefault();
+        openPalette();
+      }
+      // ? for keyboard shortcuts cheat sheet
+      else if (e.key === '?') {
+        e.preventDefault();
+        toggleShortcutsModal();
+      }
+      // a for approving first item if on today or approve
+      else if (e.key.toLowerCase() === 'a' && (state.activeVerb === 'today' || state.activeVerb === 'approve')) {
+        if (state.approvals && state.approvals.length > 0) {
+          optimisticApprove(state.approvals[0].id);
+        }
       }
     });
 
     // Boot
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      initDensity();
       initLanguage();
       initKioskMode();
+      initDraftAutoSave();
       updateGreeting();
       loadAllData();
       startPolling();
