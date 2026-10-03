@@ -220,6 +220,73 @@ describe("Application Use Cases", () => {
         })
       ).rejects.toThrow(DuplicateEntityError);
     });
+
+    it("should detect utility expense spikes >15% and force L2 review with anomaly reason", async () => {
+      const corr = await corrRepo.create({
+        id: "corr-utility",
+        refNo: "IN-2026-000088",
+        direction: "IN",
+        channel: "EMAIL",
+        subject: "Monthly Electric Bill",
+        status: "RECEIVED",
+        classification: "INTERNAL",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Seed historical utility invoice for Saudi Electricity Company (400 SAR)
+      await invRepo.create({
+        id: "inv-hist-1",
+        documentId: "doc-hist-1",
+        correspondenceId: "corr-hist-1",
+        vendorName: "Saudi Electricity Company",
+        invoiceNo: "SEC-AUG-2026",
+        issueDate: "2026-08-01",
+        dueDate: "2026-08-25",
+        netAmount: 347.83,
+        taxAmount: 52.17,
+        totalAmount: 400.0,
+        currency: "SAR",
+        status: "APPROVED",
+        createdAt: new Date().toISOString(),
+      });
+
+      const useCase = new ProcessInvoiceUseCase(
+        invRepo,
+        corrRepo,
+        appRepo,
+        auditRepo,
+        notifPort
+      );
+
+      // Process new utility invoice with 35% spike (540 SAR vs 400 SAR historical average)
+      const result = await useCase.execute({
+        correspondenceId: corr.id,
+        documentId: "doc-spike",
+        confidenceScore: 0.99, // High confidence would normally allow L3
+        extraction: {
+          vendorName: "Saudi Electricity Company",
+          invoiceNo: "SEC-SEP-2026",
+          issueDate: "2026-09-01",
+          dueDate: "2026-09-25",
+          netAmount: 469.57,
+          taxAmount: 70.43,
+          totalAmount: 540.0,
+          currency: "SAR",
+          category: "UTILITY_ELECTRICITY",
+          lineItems: [],
+        },
+      });
+
+      expect(result.invoice.isAnomalySpike).toBe(true);
+      expect(result.invoice.anomalyReason).toContain("Utility Spike Detected");
+      expect(result.invoice.anomalyReason).toContain("35% above the historical average");
+      expect(result.autonomyLevel).toBe("L2"); // Forced to L2 despite 0.99 confidence
+      expect(result.approval).toBeDefined();
+      expect(notifPort.sentCards.length).toBe(1);
+      expect(notifPort.sentCards[0]?.title).toContain("Expense Anomaly Detected");
+      expect(notifPort.sentCards[0]?.priority).toBe("URGENT");
+    });
   });
 
   describe("DecideApprovalUseCase", () => {
@@ -296,6 +363,41 @@ describe("Application Use Cases", () => {
       expect(notifPort.sentCards.length).toBe(1);
       expect(notifPort.sentCards[0]?.recipientEmail).toBe("ceo@company.com");
       expect(notifPort.sentCards[0]?.title).toContain("Visitor Arrived");
+    });
+
+    it("should sync visitor contact to CRM and deduplicate recurring guests", async () => {
+      const { InMemoryCrmAdapter } = await import("@infrastructure/crm/hubspot-crm-adapter");
+      const crmAdapter = new InMemoryCrmAdapter();
+      const useCase = new VisitorCheckInUseCase(visRepo, auditRepo, notifPort, crmAdapter);
+
+      // Check-in guest first time
+      await useCase.execute({
+        dto: {
+          fullName: "Sara Jenkins",
+          company: "Apex Global",
+          email: "sara@apex.com",
+          hostEmployeeEmail: "ops@company.com",
+          purpose: "Quarterly review",
+          ndaSigned: true,
+        },
+      });
+
+      expect(crmAdapter.getSyncedCount()).toBe(1);
+
+      // Check-in same guest second time
+      await useCase.execute({
+        dto: {
+          fullName: "Sara Jenkins",
+          company: "Apex Global",
+          email: "sara@apex.com",
+          hostEmployeeEmail: "cfo@company.com",
+          purpose: "Follow-up meeting",
+          ndaSigned: true,
+        },
+      });
+
+      // Still 1 contact in CRM due to automatic email deduplication
+      expect(crmAdapter.getSyncedCount()).toBe(1);
     });
   });
 

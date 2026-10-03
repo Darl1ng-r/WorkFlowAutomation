@@ -266,6 +266,14 @@ export class D1InvoiceRepository implements IInvoiceRepository {
     return row ? this.mapRow(row) : null;
   }
 
+  async findByVendor(vendorName: string): Promise<InvoiceEntity[]> {
+    const { results } = await this.db
+      .prepare(`SELECT * FROM invoices WHERE LOWER(vendor_name) = LOWER(?);`)
+      .bind(vendorName)
+      .all<any>();
+    return (results || []).map((r: any) => this.mapRow(r));
+  }
+
   async updateStatus(id: string, status: InvoiceEntity["status"], accountingRef?: string): Promise<void> {
     if (accountingRef) {
       await this.db

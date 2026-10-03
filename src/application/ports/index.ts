@@ -29,3 +29,20 @@ export interface IAIExtractionPort {
     isRestricted: boolean;
   }>;
 }
+
+export interface ICrmContactInput {
+  name: string;
+  email?: string | undefined;
+  phone?: string | undefined;
+  company?: string | undefined;
+  source: "FRONT_DESK" | "CORRESPONDENCE" | "MANUAL";
+}
+
+export interface ICrmContactResult {
+  crmContactId: string;
+  status: "CREATED" | "UPDATED" | "DEDUPLICATED";
+}
+
+export interface ICrmPort {
+  syncContact(contact: ICrmContactInput): Promise<ICrmContactResult>;
+}

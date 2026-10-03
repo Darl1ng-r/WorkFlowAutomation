@@ -44,6 +44,7 @@ export interface IInvoiceRepository {
   create(entity: InvoiceEntity): Promise<InvoiceEntity>;
   findById(id: string): Promise<InvoiceEntity | null>;
   findByVendorAndNumber(vendorName: string, invoiceNo: string): Promise<InvoiceEntity | null>;
+  findByVendor(vendorName: string): Promise<InvoiceEntity[]>;
   updateStatus(id: string, status: InvoiceEntity["status"], accountingRef?: string): Promise<void>;
   list(status?: InvoiceEntity["status"]): Promise<InvoiceEntity[]>;
 }

@@ -288,4 +288,51 @@ describe("API End-to-End Integration Tests", () => {
     expect(body.success).toBe(true);
     expect(Array.isArray(body.data)).toBe(true);
   });
+
+  it("GET /api/metrics/telemetry should return live ROI, hours saved, and error capture rate", async () => {
+    const res = await app.request("/api/metrics/telemetry");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(typeof body.data.hoursSaved).toBe("number");
+    expect(typeof body.data.estimatedSavingsUsd).toBe("number");
+    expect(typeof body.data.aiAccuracyScore).toBe("number");
+    expect(body.data.channelBreakdown).toBeDefined();
+    expect(body.data.autonomyDistribution).toBeDefined();
+  });
+
+  it("GET /api/system/sop should return dynamically compiled operational SOP runbooks", async () => {
+    const res = await app.request("/api/system/sop");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.some((sop: any) => sop.id === "SOP-FD-01")).toBe(true);
+    expect(body.data.some((sop: any) => sop.id === "SOP-FIN-01")).toBe(true);
+  });
+
+  it("POST /api/rooms/webhook/calendar should ingest Google Calendar resource events", async () => {
+    const res = await app.request("/api/rooms/webhook/calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomName: "Sync",
+        timeSlot: "11:00 - 12:00",
+        title: "Client Contract Signing",
+        hostName: "Partner Legal",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.synced).toBe(true);
+
+    // Verify room is now marked as booked
+    const verifyRes = await app.request("/api/rooms");
+    const verifyBody = (await verifyRes.json()) as any;
+    const meetingRoom = verifyBody.data.find((r: any) => r.name === "Sync");
+    const slot = meetingRoom.slots.find((s: any) => s.time === "11:00 - 12:00");
+    expect(slot.status).toBe("BOOKED");
+    expect(slot.title).toBe("Client Contract Signing");
+  });
 });

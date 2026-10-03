@@ -57,17 +57,48 @@ export class ProcessInvoiceUseCase {
       );
     }
 
-    // 3. Evaluate Autonomy Level
-    const autonomyLevel = AutonomyPolicyEngine.evaluate({
+    // 3. Detect Utility / Expense Anomalies & Spikes
+    let isAnomalySpike = false;
+    let anomalyReason: string | undefined;
+
+    const isUtilityOrRecurring =
+      extraction.category === "UTILITY_ELECTRICITY" ||
+      extraction.category === "UTILITY_WATER" ||
+      extraction.category === "OFFICE_RENT" ||
+      extraction.category === "TELECOM" ||
+      /electric|water|telecom|rent|sec|nwc|stc|ooredoo|zain|municipality/i.test(extraction.vendorName);
+
+    const pastInvoices = await this.invoiceRepo.findByVendor(extraction.vendorName);
+    if (isUtilityOrRecurring && pastInvoices.length > 0) {
+      const historicalAverage =
+        pastInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0) / pastInvoices.length;
+
+      // If current invoice exceeds historical average by >15%
+      if (extraction.totalAmount > historicalAverage * 1.15) {
+        isAnomalySpike = true;
+        const percentageIncrease = Math.round(
+          ((extraction.totalAmount - historicalAverage) / historicalAverage) * 100
+        );
+        anomalyReason = `Utility Spike Detected: Total (${extraction.totalAmount} ${extraction.currency}) is ${percentageIncrease}% above the historical average (${Math.round(historicalAverage * 100) / 100} ${extraction.currency}) across ${pastInvoices.length} previous invoices.`;
+      }
+    }
+
+    // 4. Evaluate Autonomy Level
+    // If an anomaly spike is detected, force L2 (Human in the loop approval)
+    let autonomyLevel = AutonomyPolicyEngine.evaluate({
       actionType: "INVOICE_EXTRACTION",
       confidenceScore,
       recentErrorRate,
     });
 
+    if (isAnomalySpike) {
+      autonomyLevel = "L2";
+    }
+
     const nowIso = new Date().toISOString();
     const invoiceId = crypto.randomUUID();
 
-    // 4. Save Invoice Record (DRAFT_PENDING if L2)
+    // 5. Save Invoice Record (DRAFT_PENDING if L2)
     const invoice: InvoiceEntity = {
       id: invoiceId,
       documentId,
@@ -81,13 +112,16 @@ export class ProcessInvoiceUseCase {
       taxAmount: extraction.taxAmount,
       totalAmount: extraction.totalAmount,
       currency: extraction.currency,
+      category: extraction.category ?? (isUtilityOrRecurring ? "UTILITY_ELECTRICITY" : "OTHER"),
+      isAnomalySpike,
+      anomalyReason,
       status: autonomyLevel === "L3" ? "APPROVED" : "DRAFT_PENDING",
       createdAt: nowIso,
     };
 
     const savedInvoice = await this.invoiceRepo.create(invoice);
 
-    // 5. If L2, generate Approval record and notify finance team
+    // 6. If L2, generate Approval record and notify finance team
     let savedApproval: ApprovalEntity | undefined;
     if (autonomyLevel === "L2") {
       const approval: ApprovalEntity = {
@@ -103,6 +137,8 @@ export class ProcessInvoiceUseCase {
           totalAmount: extraction.totalAmount,
           currency: extraction.currency,
           dueDate: extraction.dueDate,
+          isAnomalySpike,
+          anomalyReason,
         },
         decision: "APPROVED", // Default action proposed by AI, waiting for human decision
         decidedByEmail: undefined,
@@ -113,11 +149,18 @@ export class ProcessInvoiceUseCase {
       savedApproval = await this.approvalRepo.create(approval);
 
       if (this.notificationPort) {
+        const notifTitle = isAnomalySpike
+          ? `⚠️ Expense Anomaly Detected: ${extraction.vendorName}`
+          : `Invoice Review Required: ${extraction.vendorName}`;
+        const notifMsg = isAnomalySpike
+          ? `${anomalyReason} Verification required prior to bill draft creation.`
+          : `Invoice #${extraction.invoiceNo} for ${extraction.totalAmount} ${extraction.currency} requires verification before bill draft creation.`;
+
         await this.notificationPort.sendCard({
-          title: `Invoice Review Required: ${extraction.vendorName}`,
-          message: `Invoice #${extraction.invoiceNo} for ${extraction.totalAmount} ${extraction.currency} requires verification before bill draft creation.`,
+          title: notifTitle,
+          message: notifMsg,
           actionLabel: "Review Invoice",
-          priority: "HIGH",
+          priority: isAnomalySpike ? "URGENT" : "HIGH",
         });
       }
     }

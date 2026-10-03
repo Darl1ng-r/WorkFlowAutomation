@@ -23,7 +23,8 @@ import { ProcessInvoiceUseCase } from "@application/use-cases/process-invoice.us
 import { DecideApprovalUseCase } from "@application/use-cases/decide-approval.use-case";
 import { VisitorCheckInUseCase } from "@application/use-cases/visitor-check-in.use-case";
 import { CheckExpiringObligationsUseCase } from "@application/use-cases/check-expiring-obligations.use-case";
-import { INotificationPort, IStoragePort } from "@application/ports";
+import { INotificationPort, IStoragePort, ICrmPort } from "@application/ports";
+import { InMemoryCrmAdapter } from "./crm/hubspot-crm-adapter";
 
 export interface ServiceContainer {
   correspondenceRepo: ICorrespondenceRepository;
@@ -37,6 +38,7 @@ export interface ServiceContainer {
   db?: D1Database | undefined;
   storagePort?: IStoragePort | undefined;
   notificationPort?: INotificationPort | undefined;
+  crmPort?: ICrmPort | undefined;
 
   // Use Cases
   registerCorrespondence: RegisterCorrespondenceUseCase;
@@ -107,7 +109,8 @@ export function createContainerFromEnv(env: {
     auditRepo
   );
 
-  const visitorCheckIn = new VisitorCheckInUseCase(visitorRepo, auditRepo);
+  const crmPort = new InMemoryCrmAdapter();
+  const visitorCheckIn = new VisitorCheckInUseCase(visitorRepo, auditRepo, undefined, crmPort);
 
   const checkExpiringObligations = new CheckExpiringObligationsUseCase(
     obligationRepo,
@@ -125,6 +128,7 @@ export function createContainerFromEnv(env: {
     auditRepo,
     sequenceRepo,
     storagePort,
+    crmPort,
     registerCorrespondence,
     processInvoice,
     decideApproval,

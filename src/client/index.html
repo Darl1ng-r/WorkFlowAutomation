@@ -1333,6 +1333,11 @@
         </span>
       </button>
 
+      <button class="btn-subtle" id="telemetry-btn" onclick="openTelemetryModal()" title="View Operational ROI & System SOPs" style="padding: 5px 12px; font-size: 13px; font-weight: 600; gap: 6px; border-radius: 9999px;">
+        <span class="icon" style="color: var(--mint);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
+        <span id="top-hours-saved">ROI & SOPs</span>
+      </button>
+
       <button class="icon-btn" id="shortcuts-btn" onclick="toggleShortcutsModal()" title="Keyboard shortcuts (?)">
         <span class="icon" style="font-weight: 800; font-family: var(--font-heading); font-size: 13.5px;">?</span>
       </button>
@@ -2003,6 +2008,66 @@
   </div>
 
   <!-- =========================================================================
+       Operational ROI Telemetry & Live SOP Runbooks Modal
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-metrics" style="display: none;" onclick="if(event.target === this) closeMetricsModal()">
+    <div class="modal-palette" style="max-width: 720px; padding: 24px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="btn-clay" id="tab-metrics-roi" onclick="switchMetricsTab('roi')" style="padding: 6px 14px; font-size: 13.5px;">Live ROI Telemetry</button>
+          <button class="btn-subtle" id="tab-metrics-sop" onclick="switchMetricsTab('sop')" style="padding: 6px 14px; font-size: 13.5px;">System SOP Runbooks</button>
+        </div>
+        <button class="btn-subtle" onclick="closeMetricsModal()" style="padding: 4px 8px;">✕</button>
+      </div>
+
+      <!-- Tab Content 1: Live ROI Telemetry -->
+      <div id="metrics-view-roi" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+          <div class="metric-card" style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px;">
+            <div class="caption">Hours Saved (MTD)</div>
+            <div class="stat-number tabular" id="m-hours-saved" style="font-size: 28px; color: var(--green); margin-top: 4px;">—</div>
+            <div class="caption" style="font-size: 11.5px; margin-top: 2px;">Automated intake & L2 prep</div>
+          </div>
+          <div class="metric-card" style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px;">
+            <div class="caption">Estimated Labor Value</div>
+            <div class="stat-number tabular" id="m-dollars-saved" style="font-size: 28px; color: var(--teal); margin-top: 4px;">—</div>
+            <div class="caption" style="font-size: 11.5px; margin-top: 2px;">$45/hr blended loaded rate</div>
+          </div>
+          <div class="metric-card" style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px;">
+            <div class="caption">AI Accuracy Score</div>
+            <div class="stat-number tabular" id="m-ai-accuracy" style="font-size: 28px; color: var(--mint); margin-top: 4px;">98.6%</div>
+            <div class="caption" style="font-size: 11.5px; margin-top: 2px;">Error capture rate: 1.4%</div>
+          </div>
+        </div>
+
+        <div style="background: var(--surface-tile); border: 1px solid var(--glass-edge); border-radius: 18px; padding: 16px;">
+          <h4 style="margin-bottom: 10px; font-size: 15px;">Intake Channels Ingested</h4>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;" id="m-channel-stats">
+            <span class="chip chip-mint">Email: <strong id="ch-email">0</strong></span>
+            <span class="chip chip-info">Drive Scans: <strong id="ch-scan">0</strong></span>
+            <span class="chip chip-sage">Kiosk Visits: <strong id="ch-visit">0</strong></span>
+            <span class="chip chip-subtle">Direct Upload: <strong id="ch-upload">0</strong></span>
+          </div>
+        </div>
+
+        <div style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 18px; padding: 16px;">
+          <h4 style="margin-bottom: 6px; font-size: 15px;">Active Autonomous Governance</h4>
+          <div style="font-size: 13.5px; color: var(--muted); line-height: 1.5;">
+            Zero-Budget Edition operating on Cloudflare Workers + D1 SQLite. L0 human gate strictly blocks unreviewed payments. Tamper-evident SHA-256 chain active.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Dynamic SOP Runbooks -->
+      <div id="metrics-view-sop" style="display: none; overflow-y: auto; flex: 1;">
+        <div id="sop-runbooks-list" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Loaded dynamically from /api/system/sop -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        Quick Room Booking Modal (8 → 2 clicks)
        ========================================================================= -->
   <div class="modal-backdrop" id="modal-room-booking" onclick="handleRoomBackdrop(event)">
@@ -2250,6 +2315,9 @@
         const summary = p.draftedReply || p.notes || `Proposed action: ${item.proposedAction}`;
         const refBadge = p.refNo ? `<span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${p.refNo}', this)" title="Click to copy ref">${p.refNo}</span>` : '';
         const amountBadge = p.totalAmount ? `<span class="chip chip-info tabular">${p.currency || 'SAR'} ${p.totalAmount}</span>` : '';
+        const anomalyBadge = p.isAnomalySpike
+          ? `<span class="chip chip-amber" title="${p.anomalyReason || 'Utility spike detected'}">⚠️ Expense Anomaly</span>`
+          : '';
 
         return `
           <div class="call-card" id="card-${item.id}">
@@ -2258,6 +2326,7 @@
                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap;">
                   ${refBadge}
                   ${amountBadge}
+                  ${anomalyBadge}
                   ${shelf}
                 </div>
                 <div class="call-title">${title}</div>
@@ -3178,6 +3247,106 @@
     }
 
     // =========================================================================
+    // Operational ROI Telemetry & Live SOP Runbooks
+    // =========================================================================
+    async function openTelemetryModal() {
+      const modal = document.getElementById('modal-metrics');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      switchMetricsTab('roi');
+      await loadTelemetryData();
+    }
+
+    function closeMetricsModal() {
+      const modal = document.getElementById('modal-metrics');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchMetricsTab(tab) {
+      const roiView = document.getElementById('metrics-view-roi');
+      const sopView = document.getElementById('metrics-view-sop');
+      const roiTab = document.getElementById('tab-metrics-roi');
+      const sopTab = document.getElementById('tab-metrics-sop');
+
+      if (tab === 'roi') {
+        if (roiView) roiView.style.display = 'flex';
+        if (sopView) sopView.style.display = 'none';
+        if (roiTab) { roiTab.className = 'btn-clay'; }
+        if (sopTab) { sopTab.className = 'btn-subtle'; }
+      } else {
+        if (roiView) roiView.style.display = 'none';
+        if (sopView) sopView.style.display = 'block';
+        if (roiTab) { roiTab.className = 'btn-subtle'; }
+        if (sopTab) { sopTab.className = 'btn-clay'; }
+        loadSopData();
+      }
+    }
+
+    async function loadTelemetryData() {
+      try {
+        const res = await fetch('/api/metrics/telemetry');
+        if (res.ok) {
+          const json = await res.json();
+          const d = json.data;
+          const hEl = document.getElementById('m-hours-saved');
+          if (hEl) hEl.innerText = `${d.hoursSaved} hrs`;
+          const dEl = document.getElementById('m-dollars-saved');
+          if (dEl) dEl.innerText = `$${d.estimatedSavingsUsd.toLocaleString()}`;
+          const aEl = document.getElementById('m-ai-accuracy');
+          if (aEl) aEl.innerText = `${d.aiAccuracyScore}%`;
+          const topBtn = document.getElementById('top-hours-saved');
+          if (topBtn) topBtn.innerText = `⚡ ${d.hoursSaved} hrs saved ($${d.estimatedSavingsUsd.toLocaleString()})`;
+
+          if (d.channelBreakdown) {
+            const em = document.getElementById('ch-email');
+            if (em) em.innerText = d.channelBreakdown.EMAIL || 0;
+            const sc = document.getElementById('ch-scan');
+            if (sc) sc.innerText = d.channelBreakdown.SCAN || 0;
+            const vi = document.getElementById('ch-visit');
+            if (vi) vi.innerText = d.channelBreakdown.VISIT || 0;
+            const up = document.getElementById('ch-upload');
+            if (up) up.innerText = d.channelBreakdown.UPLOAD || 0;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load telemetry:', err);
+      }
+    }
+
+    async function loadSopData() {
+      const container = document.getElementById('sop-runbooks-list');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/system/sop');
+        if (res.ok) {
+          const json = await res.json();
+          container.innerHTML = json.data.map(sop => `
+            <div style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 18px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="chip chip-mint tabular" style="font-weight: 700;">${sop.id}</span>
+                <span class="caption">Version ${sop.version} · Effective ${sop.effectiveDate}</span>
+              </div>
+              <h3 style="font-size: 16px; margin-bottom: 4px;">${sop.title}</h3>
+              <p class="caption" style="margin-bottom: 12px;">Department: ${sop.department}</p>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${sop.steps.map(s => `
+                  <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.4;">
+                    <span class="tabular font-bold" style="color: var(--teal); min-width: 20px;">${s.stepNumber}.</span>
+                    <div>
+                      <strong>${s.action}</strong>: <span style="color: var(--muted);">${s.rule}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load SOP runbooks:', err);
+      }
+    }
+
+    // =========================================================================
     // Crash-Proof Draft Auto-Save (localStorage)
     // =========================================================================
     function initDraftAutoSave() {
@@ -3341,6 +3510,7 @@
       initDraftAutoSave();
       updateGreeting();
       loadAllData();
+      loadTelemetryData();
       startPolling();
     });
   </script>

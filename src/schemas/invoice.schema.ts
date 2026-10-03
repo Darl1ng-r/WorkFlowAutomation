@@ -7,6 +7,19 @@ export const InvoiceLineItemSchema = z.object({
   totalPrice: z.number().nonnegative(),
 });
 
+export const InvoiceCategorySchema = z
+  .enum([
+    "UTILITY_ELECTRICITY",
+    "UTILITY_WATER",
+    "OFFICE_RENT",
+    "TELECOM",
+    "SUBSCRIPTION",
+    "GENERAL_SUPPLIES",
+    "PROFESSIONAL_SERVICES",
+    "OTHER",
+  ])
+  .default("OTHER");
+
 export const InvoiceExtractionSchema = z
   .object({
     vendorName: z.string().min(1, "Vendor name is required"),
@@ -18,6 +31,7 @@ export const InvoiceExtractionSchema = z
     taxAmount: z.number().nonnegative(),
     totalAmount: z.number().positive(),
     currency: z.string().min(3).max(5).default("SAR"),
+    category: InvoiceCategorySchema.optional(),
     lineItems: z.array(InvoiceLineItemSchema).default([]),
   })
   .superRefine((data, ctx) => {

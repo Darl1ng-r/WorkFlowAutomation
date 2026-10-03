@@ -116,6 +116,12 @@ export class InMemoryInvoiceRepository implements IInvoiceRepository {
     );
   }
 
+  async findByVendor(vendorName: string): Promise<InvoiceEntity[]> {
+    return this.items.filter(
+      (i) => i.vendorName.toLowerCase() === vendorName.toLowerCase()
+    );
+  }
+
   async updateStatus(id: string, status: InvoiceEntity["status"], accountingRef?: string): Promise<void> {
     const item = await this.findById(id);
     if (item) {

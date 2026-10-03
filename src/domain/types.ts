@@ -96,6 +96,9 @@ export interface InvoiceEntity {
   taxAmount: number;
   totalAmount: number;
   currency: string;
+  category?: "UTILITY_ELECTRICITY" | "UTILITY_WATER" | "OFFICE_RENT" | "TELECOM" | "SUBSCRIPTION" | "GENERAL_SUPPLIES" | "PROFESSIONAL_SERVICES" | "OTHER" | undefined;
+  isAnomalySpike?: boolean | undefined;
+  anomalyReason?: string | undefined;
   accountingRef?: string | undefined;
   status: "DRAFT_PENDING" | "APPROVED" | "REJECTED" | "SYNCED";
   createdAt: string;

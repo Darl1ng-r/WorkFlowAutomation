@@ -1,5 +1,5 @@
 import { IVisitorRepository, IAuditRepository } from "@domain/repositories";
-import { INotificationPort } from "@application/ports";
+import { INotificationPort, ICrmPort } from "@application/ports";
 import { VisitorEntity } from "@domain/types";
 import { VisitorCheckInDTO } from "@schemas/visitor.schema";
 import { calculateSha256Hex } from "./register-correspondence.use-case";
@@ -12,7 +12,8 @@ export class VisitorCheckInUseCase {
   constructor(
     private readonly visitorRepo: IVisitorRepository,
     private readonly auditRepo: IAuditRepository,
-    private readonly notificationPort?: INotificationPort
+    private readonly notificationPort?: INotificationPort,
+    private readonly crmPort?: ICrmPort
   ) {}
 
   public async execute(input: VisitorCheckInInput): Promise<VisitorEntity> {
@@ -48,6 +49,21 @@ export class VisitorCheckInUseCase {
         message: `${dto.fullName} ${dto.company ? `from ${dto.company}` : ""} has arrived at the front desk to see you (Purpose: ${dto.purpose}). Badge #${badgeNumber}.`,
         priority: "HIGH",
       });
+    }
+
+    // Sync visitor contact to CRM with deduplication
+    if (this.crmPort) {
+      try {
+        await this.crmPort.syncContact({
+          name: dto.fullName,
+          company: dto.company,
+          email: dto.email,
+          phone: dto.phone,
+          source: "FRONT_DESK",
+        });
+      } catch (err) {
+        console.error("CRM contact sync failed:", err);
+      }
     }
 
     // Audit log
