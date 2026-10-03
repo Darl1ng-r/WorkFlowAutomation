@@ -280,4 +280,12 @@ describe("API End-to-End Integration Tests", () => {
     expect(bookedSlot.status).toBe("BOOKED");
     expect(bookedSlot.title).toBe("Executive Strategy Review");
   });
+
+  it("GET /api/audit should return immutable audit events", async () => {
+    const res = await app.request("/api/audit");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
 });

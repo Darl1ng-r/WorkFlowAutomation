@@ -6,7 +6,7 @@
   <title>Office OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Cairo:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.ico">
   <style>
     /* ==========================================================================
@@ -432,6 +432,77 @@
       border-radius: 9999px;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
+    }
+
+    /* ==========================================================================
+       Bilingual Arabic (RTL) Support
+       ========================================================================== */
+    [dir="rtl"] {
+      direction: rtl;
+      text-align: right;
+    }
+
+    [dir="rtl"] body {
+      font-family: 'Cairo', var(--font-body);
+    }
+
+    [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4 {
+      font-family: 'Cairo', var(--font-heading);
+    }
+
+    [dir="rtl"] .nav-left,
+    [dir="rtl"] .nav-right,
+    [dir="rtl"] .bottom-dock {
+      flex-direction: row-reverse;
+    }
+
+    /* ==========================================================================
+       Kiosk Mode (Locked Fullscreen Reception & Privacy Auto-Reset)
+       ========================================================================== */
+    body.kiosk-mode .bottom-dock-wrap,
+    body.kiosk-mode .search-pill,
+    body.kiosk-mode #btn-log-fast {
+      display: none !important;
+    }
+
+    body.kiosk-mode main.workspace {
+      padding-bottom: 30px;
+    }
+
+    .kiosk-reset-card {
+      background: var(--sem-ok-bg);
+      border: 1px solid var(--green);
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: none;
+      animation: fadeIn 300ms ease;
+    }
+
+    .kiosk-reset-card h3 {
+      color: var(--sem-ok-text);
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .kiosk-timer-bar {
+      height: 4px;
+      background: var(--green);
+      border-radius: 2px;
+      margin-top: 10px;
+      transition: width 1s linear;
+    }
+
+    .phone-masked {
+      letter-spacing: 1px;
+      opacity: 0.85;
+    }
+
+    .audit-log-box {
+      max-height: 450px;
+      overflow-y: auto;
+      margin-top: 14px;
+      padding-right: 6px;
     }
 
     /* ==========================================================================
@@ -1063,6 +1134,17 @@
         <span>Log something</span>
       </button>
 
+      <button class="btn-subtle" id="lang-btn" onclick="toggleLanguage()" title="Switch language (EN / العربية)" style="padding: 6px 12px; gap: 6px;">
+        <span class="icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </span>
+        <span id="lang-label" style="font-weight: 700; font-size: 13.5px;">عربي</span>
+      </button>
+
       <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle Light / Dark mode">
         <span class="icon" id="theme-icon">
           <!-- Moon icon for light mode (click to switch to dark) -->
@@ -1297,11 +1379,21 @@
 
       <!-- Correspondence Table Tile -->
       <div class="tile table-tile">
-        <div class="table-tile-header">
+        <div class="table-tile-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h3>Central register</h3>
             <p class="caption">Cryptographically chained intake audit log</p>
           </div>
+          <button class="btn-subtle" onclick="exportCorrespondenceCSV()" title="Export correspondence register to CSV" style="padding: 6px 12px; gap: 6px;">
+            <span class="icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </span>
+            <span>Export CSV</span>
+          </button>
         </div>
 
         <div class="search-filter-bar">
@@ -1363,6 +1455,21 @@
             </div>
           </div>
 
+          <!-- Kiosk Privacy Auto-Reset Confirmation Banner -->
+          <div class="kiosk-reset-card" id="kiosk-success-banner">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 id="kiosk-success-title">Guest checked in successfully!</h3>
+                <p class="caption" id="kiosk-success-msg" style="color: var(--sem-ok-text);">Host has been alerted on Google Chat.</p>
+              </div>
+              <button class="btn-subtle" onclick="resetKioskScreen()" style="padding: 4px 10px; font-size: 12px;">Reset screen now</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <span class="caption" style="font-size: 12px;">Auto-clearing screen for next guest in <strong id="kiosk-reset-countdown" class="tabular">30s</strong></span>
+            </div>
+            <div class="kiosk-timer-bar" id="kiosk-timer-bar"></div>
+          </div>
+
           <form id="quick-visitor-form" onsubmit="submitQuickVisitor(event)">
             <div style="display: flex; flex-direction: column; gap: 14px;">
               <div>
@@ -1400,7 +1507,19 @@
               <h3>Active in the office</h3>
               <p class="caption">Currently signed in guests</p>
             </div>
-            <span class="chip chip-ok tabular" id="active-guests-count">1 active</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="chip chip-ok tabular" id="active-guests-count">1 active</span>
+              <button class="btn-subtle" onclick="exportVisitorsCSV()" title="Export visitors register to CSV" style="padding: 4px 10px; font-size: 12px; gap: 4px;">
+                <span class="icon">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </span>
+                <span>Export CSV</span>
+              </button>
+            </div>
           </div>
 
           <div id="desk-guests-list">
@@ -1422,11 +1541,20 @@
       </div>
 
       <div class="tile" style="max-width: 900px;">
-        <div class="tile-header">
+        <div class="tile-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h2>Pending decisions</h2>
             <p class="caption">All actions proposed by AI requiring human sign-off.</p>
           </div>
+          <button class="btn-subtle" onclick="openAuditModal()" style="padding: 6px 12px; font-size: 13px; gap: 6px;">
+            <span class="icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+            </span>
+            <span>Audit trail (SHA-256)</span>
+          </button>
         </div>
 
         <div id="full-approvals-list">
@@ -1516,6 +1644,44 @@
           </div>
           <span class="caption">System</span>
         </div>
+        <div class="palette-item" onclick="openAuditModal(); closePalette();">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="icon" style="color: var(--teal);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+            </span>
+            <span>View Immutable Audit Log (SHA-256)</span>
+          </div>
+          <span class="caption">Audit</span>
+        </div>
+        <div class="palette-item" onclick="exportCorrespondenceCSV(); closePalette();">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="icon" style="color: var(--teal);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </span>
+            <span>Export Correspondence Register (CSV)</span>
+          </div>
+          <span class="caption">Data</span>
+        </div>
+        <div class="palette-item" onclick="toggleLanguage(); closePalette();">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="icon" style="color: var(--teal);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </span>
+            <span>Switch Language (EN / العربية)</span>
+          </div>
+          <span class="caption">Locale</span>
+        </div>
 
         <div class="palette-group-title" style="margin-top: 10px;">Recent records</div>
         <div class="palette-item" onclick="switchVerb('mail'); closePalette();">
@@ -1554,6 +1720,37 @@
           </div>
           <span class="chip chip-sage">Cabinet 1, Shelf A</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Audit Log Modal (SHA-256 Immutable Audit Trail)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-audit" style="display: none;" onclick="if(event.target === this) closeAuditModal()">
+    <div class="modal-palette" style="max-width: 680px; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <h3>Immutable audit log</h3>
+          <p class="caption">Cryptographically chained ledger (SHA-256) of all L0–L2 approvals and operational events.</p>
+        </div>
+        <button class="icon-btn" onclick="closeAuditModal()" title="Close">
+          <span class="icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="audit-log-box" id="audit-events-list">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+        <button class="btn-clay" onclick="closeAuditModal()">Done</button>
       </div>
     </div>
   </div>
@@ -2222,11 +2419,255 @@
         if (json.success) {
           e.target.reset();
           await fetchActiveVisitors();
+          triggerKioskAutoReset(payload.fullName, payload.hostEmployeeEmail);
         }
       } catch (err) {
         alert('Check-in failed.');
       }
     }
+
+    // =========================================================================
+    // Kiosk Mode & Privacy Auto-Reset
+    // =========================================================================
+    let kioskResetTimer = null;
+    let kioskSecondsRemaining = 30;
+
+    function initKioskMode() {
+      const isKiosk = window.location.pathname.startsWith('/kiosk') || window.location.search.includes('kiosk=true');
+      if (isKiosk) {
+        document.body.classList.add('kiosk-mode');
+        switchVerb('desk');
+      }
+    }
+
+    function triggerKioskAutoReset(guestName, hostEmail) {
+      const banner = document.getElementById('kiosk-success-banner');
+      if (!banner) return;
+
+      banner.style.display = 'block';
+      const msg = document.getElementById('kiosk-success-msg');
+      if (msg) msg.innerText = `Welcome, ${guestName}! Host (${hostEmail}) has been notified on Google Chat.`;
+
+      kioskSecondsRemaining = 30;
+      const countEl = document.getElementById('kiosk-reset-countdown');
+      const barEl = document.getElementById('kiosk-timer-bar');
+      if (countEl) countEl.innerText = `${kioskSecondsRemaining}s`;
+      if (barEl) barEl.style.width = '100%';
+
+      if (kioskResetTimer) clearInterval(kioskResetTimer);
+      kioskResetTimer = setInterval(() => {
+        kioskSecondsRemaining--;
+        if (countEl) countEl.innerText = `${kioskSecondsRemaining}s`;
+        if (barEl) barEl.style.width = `${(kioskSecondsRemaining / 30) * 100}%`;
+        if (kioskSecondsRemaining <= 0) {
+          resetKioskScreen();
+        }
+      }, 1000);
+    }
+
+    function resetKioskScreen() {
+      if (kioskResetTimer) {
+        clearInterval(kioskResetTimer);
+        kioskResetTimer = null;
+      }
+      const banner = document.getElementById('kiosk-success-banner');
+      if (banner) banner.style.display = 'none';
+
+      const form = document.getElementById('quick-visitor-form');
+      if (form) form.reset();
+    }
+
+    // =========================================================================
+    // Bilingual Arabic / English (RTL/LTR) Support
+    // =========================================================================
+    let currentLang = 'en';
+    const translations = {
+      en: {
+        today: 'Today',
+        mail: 'Mail',
+        desk: 'Desk',
+        approve: 'Approve',
+        search: 'Search anything...',
+        logSomething: 'Log something',
+        langLabel: 'عربي',
+        exportCsv: 'Export CSV',
+        auditTrail: 'Audit trail (SHA-256)',
+        quickActions: 'Quick actions'
+      },
+      ar: {
+        today: 'اليوم',
+        mail: 'البريد',
+        desk: 'المكتب',
+        approve: 'الموافقات',
+        search: 'بحث في السجلات...',
+        logSomething: 'تسجيل وارد جديد',
+        langLabel: 'English',
+        exportCsv: 'تصدير CSV',
+        auditTrail: 'سجل التدقيق (SHA-256)',
+        quickActions: 'إجراءات سريعة'
+      }
+    };
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      document.documentElement.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+      document.documentElement.setAttribute('lang', currentLang);
+      localStorage.setItem('office_os_lang', currentLang);
+      updateLanguageUI();
+    }
+
+    function updateLanguageUI() {
+      const t = translations[currentLang];
+      const langLabel = document.getElementById('lang-label');
+      if (langLabel) langLabel.innerText = t.langLabel;
+
+      const tabToday = document.querySelector('#tab-today span:last-child');
+      if (tabToday) tabToday.innerText = t.today;
+
+      const tabMail = document.querySelector('#tab-mail span:last-child');
+      if (tabMail) tabMail.innerText = t.mail;
+
+      const tabDesk = document.querySelector('#tab-desk span:last-child');
+      if (tabDesk) tabDesk.innerText = t.desk;
+
+      const tabApprove = document.querySelector('#tab-approve > span:nth-of-type(2)');
+      if (tabApprove) tabApprove.innerText = t.approve;
+
+      const searchInput = document.getElementById('palette-input');
+      if (searchInput) searchInput.placeholder = t.search;
+    }
+
+    function initLanguage() {
+      const saved = localStorage.getItem('office_os_lang') || 'en';
+      if (saved === 'ar') {
+        currentLang = 'ar';
+        document.documentElement.setAttribute('dir', 'rtl');
+        document.documentElement.setAttribute('lang', 'ar');
+        updateLanguageUI();
+      }
+    }
+
+    // =========================================================================
+    // Data Export (CSV)
+    // =========================================================================
+    function exportCorrespondenceCSV() {
+      if (!state.correspondence || state.correspondence.length === 0) {
+        showToast('No correspondence to export.');
+        return;
+      }
+      const headers = ['Ref No', 'Direction', 'Subject', 'From/To', 'Shelf', 'Status', 'Date'];
+      const rows = state.correspondence.map(c => [
+        `"${c.refNo || ''}"`,
+        `"${c.direction || ''}"`,
+        `"${(c.subject || '').replace(/"/g, '""')}"`,
+        `"${(c.sourceSender || c.recipient || '').replace(/"/g, '""')}"`,
+        `"${(c.physicalLocation || '').replace(/"/g, '""')}"`,
+        `"${c.status || ''}"`,
+        `"${c.createdAt || ''}"`
+      ]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      downloadBlob(csv, 'correspondence-register.csv', 'text/csv');
+      showToast('Exported correspondence register to CSV.');
+    }
+
+    function exportVisitorsCSV() {
+      if (!state.activeVisitors || state.activeVisitors.length === 0) {
+        showToast('No active visitors to export.');
+        return;
+      }
+      const headers = ['Visitor Name', 'Company', 'Host', 'Purpose', 'Badge', 'Checked In'];
+      const rows = state.activeVisitors.map(v => [
+        `"${(v.fullName || '').replace(/"/g, '""')}"`,
+        `"${(v.company || '').replace(/"/g, '""')}"`,
+        `"${(v.hostEmployeeEmail || '').replace(/"/g, '""')}"`,
+        `"${(v.purpose || '').replace(/"/g, '""')}"`,
+        `"${v.badgeNumber || ''}"`,
+        `"${v.checkedInAt || ''}"`
+      ]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      downloadBlob(csv, 'visitors-register.csv', 'text/csv');
+      showToast('Exported visitor register to CSV.');
+    }
+
+    function downloadBlob(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // =========================================================================
+    // Audit Log Modal (SHA-256 Ledger)
+    // =========================================================================
+    async function openAuditModal() {
+      const modal = document.getElementById('modal-audit');
+      if (modal) modal.style.display = 'flex';
+      const container = document.getElementById('audit-events-list');
+
+      try {
+        const res = await fetch('/api/audit?limit=25');
+        const json = await res.json();
+        const events = json.data || [];
+        if (container) {
+          if (events.length === 0) {
+            container.innerHTML = '<p class="caption">No audit events recorded yet.</p>';
+          } else {
+            container.innerHTML = events.map(ev => `
+              <div class="audit-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13.5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: var(--teal);">${ev.action}</strong>
+                  <span class="caption tabular">${new Date(ev.occurredAt).toLocaleTimeString()}</span>
+                </div>
+                <div style="color: var(--muted); margin-bottom: 4px;">Actor: <strong>${ev.actorEmail}</strong> (${ev.actorType}) • Entity: ${ev.entityType} #${ev.entityId}</div>
+                <div class="mono-ref caption" style="font-size: 11px; word-break: break-all; opacity: 0.85;">SHA-256: ${ev.payloadHash ? ev.payloadHash.slice(0, 32) + '...' : 'GENESIS'}</div>
+              </div>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        if (container) container.innerHTML = '<p class="caption">Failed to load audit records.</p>';
+      }
+    }
+
+    function closeAuditModal() {
+      const modal = document.getElementById('modal-audit');
+      if (modal) modal.style.display = 'none';
+    }
+
+    // =========================================================================
+    // Smart Polling with Page Visibility API
+    // =========================================================================
+    let pollTimer = null;
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        if (!document.hidden) {
+          loadAllData();
+        }
+      }, 15000);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        loadAllData();
+        startPolling();
+      }
+    });
 
     // =========================================================================
     // Command Palette (Ctrl K)
@@ -2274,13 +2715,11 @@
     // Boot
     window.addEventListener('DOMContentLoaded', () => {
       initTheme();
+      initLanguage();
+      initKioskMode();
       updateGreeting();
       loadAllData();
-      if (window.location.pathname === '/kiosk') {
-        switchVerb('desk');
-      }
-      // Auto refresh every 15s
-      setInterval(loadAllData, 15000);
+      startPolling();
     });
   </script>
 </body>
