@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "office-os",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "office_os_db",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "VAULT",
+      "bucket_name": "office-os-vault"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "workflows": [
+    {
+      "name": "intake-workflow",
+      "binding": "INTAKE_WORKFLOW",
+      "class_name": "IntakeWorkflow"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *",
+      "0 8 * * *"
+    ]
+  },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "LOG_LEVEL": "debug",
+    "DEFAULT_AUTONOMY_LEVEL": "L2"
+  }
+}

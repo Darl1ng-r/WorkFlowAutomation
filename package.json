@@ -1,0 +1,29 @@
+{
+  "name": "office-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Office OS (WorkFlowAutomation) - Autonomous Operating System for Office Operations",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 execute office_os_db --local --file=./migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute office_os_db --remote --file=./migrations/0001_init.sql"
+  },
+  "dependencies": {
+    "hono": "^4.7.2",
+    "@hono/zod-validator": "^0.4.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "@types/node": "^22.13.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6",
+    "wrangler": "^3.109.2"
+  },
+  "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000"
+}
