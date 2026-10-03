@@ -27,7 +27,7 @@ export function createApp(options: AppOptions): Hono {
   app.get("/kiosk", (c) => c.html(CLIENT_HTML));
   app.get("/favicon.ico", (c) => {
     return c.body(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#3b82f6"/><text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-size="60" fill="white">⚡</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#1C5A4F"/><path d="M26 32h48v36H26z" fill="none" stroke="#C8E4D6" stroke-width="7" stroke-linejoin="round"/><path d="M26 36l24 18 24-18" fill="none" stroke="#C8E4D6" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="70" cy="30" r="8" fill="#9BC870"/></svg>`,
       200,
       { "Content-Type": "image/svg+xml" }
     );
