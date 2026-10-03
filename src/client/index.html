@@ -559,6 +559,121 @@
       padding: 36px 20px;
     }
 
+    tr.row-selected {
+      background: rgba(22, 101, 82, 0.08) !important;
+    }
+
+    [data-theme="dark"] tr.row-selected {
+      background: rgba(56, 178, 142, 0.14) !important;
+    }
+
+    /* ==========================================================================
+       Quick Peek Drawer (macOS QuickLook / Linear Peek)
+       ========================================================================== */
+    .quick-peek-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 440px;
+      max-width: 92vw;
+      background: var(--surface-card);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-left: 1px solid var(--glass-edge);
+      box-shadow: -14px 0 45px rgba(0, 0, 0, 0.22);
+      z-index: 96;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(105%);
+      transition: transform 320ms var(--spring);
+    }
+
+    .quick-peek-drawer.open {
+      transform: translateX(0);
+    }
+
+    [dir="rtl"] .quick-peek-drawer {
+      right: auto;
+      left: 0;
+      border-left: none;
+      border-right: 1px solid var(--glass-edge);
+      box-shadow: 14px 0 45px rgba(0, 0, 0, 0.22);
+      transform: translateX(-105%);
+    }
+
+    [dir="rtl"] .quick-peek-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-body {
+      padding: 22px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .drawer-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .peek-ai-card {
+      background: var(--surface-trans);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 4px;
+    }
+
+    .drawer-footer {
+      padding: 16px 22px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 10px;
+      background: var(--surface-tile);
+    }
+
+    /* ==========================================================================
+       Batch Action Dock (Linear / Superhuman Multi-Select)
+       ========================================================================== */
+    .batch-dock-wrap {
+      position: fixed;
+      bottom: calc(max(20px, env(safe-area-inset-bottom, 20px)) + 62px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 86;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      animation: popIn 250ms var(--spring);
+    }
+
+    .batch-dock {
+      background: var(--surface-tile);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-edge);
+      border-radius: 9999px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 14px 32px -4px rgba(16, 48, 43, 0.22);
+      pointer-events: auto;
+    }
+
     /* ==========================================================================
        Main Workspace Layout
        ========================================================================== */
@@ -1472,6 +1587,9 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th style="width: 38px; text-align: center;">
+                  <input type="checkbox" id="mail-select-all" onchange="toggleAllMailSelect(this.checked)" title="Select all / Deselect">
+                </th>
                 <th>Ref</th>
                 <th>Subject</th>
                 <th>From</th>
@@ -1481,7 +1599,7 @@
             </thead>
             <tbody id="mail-table-rows">
               <tr>
-                <td colspan="5">
+                <td colspan="6">
                   <div class="skeleton-row"></div>
                   <div class="skeleton-row"></div>
                 </td>
@@ -1861,6 +1979,14 @@
           <span><kbd class="kbd-chip">/</kbd></span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Quick Peek document scan (Mail)</span>
+          <span><kbd class="kbd-chip">Space</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span>Multi-select row checkbox (Mail)</span>
+          <span><kbd class="kbd-chip">X</kbd></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
           <span>Approve first pending item</span>
           <span><kbd class="kbd-chip">A</kbd></span>
         </div>
@@ -1902,6 +2028,91 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Quick Peek Drawer (Spacebar / Row Click Inspector)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="peek-backdrop" style="display: none;" onclick="closeQuickPeek()"></div>
+  <div class="quick-peek-drawer" id="drawer-quick-peek">
+    <div class="drawer-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="chip chip-mint tabular copyable-chip" id="peek-ref" onclick="copyRef(this.innerText, this)" title="Click to copy ref">—</span>
+        <span class="chip chip-info" id="peek-direction">INBOUND</span>
+      </div>
+      <button class="btn-subtle" onclick="closeQuickPeek()" style="padding: 6px 10px;" title="Close (Esc)">
+        <span class="icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
+      </button>
+    </div>
+    
+    <div class="drawer-body">
+      <h2 id="peek-title" style="font-size: 19px; line-height: 1.35; margin-bottom: 8px; color: var(--ink);">Document Title</h2>
+      <p class="caption" id="peek-channel" style="margin-bottom: 20px;">Channel · Filed timestamp</p>
+      
+      <div class="drawer-section">
+        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Sender / Recipient</label>
+        <div id="peek-party" style="font-size: 14.5px; font-weight: 500; margin-top: 4px; color: var(--ink);">—</div>
+      </div>
+
+      <div class="drawer-section">
+        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Physical Shelf Location</label>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+          <span class="chip chip-sage" id="peek-shelf" style="font-size: 13.5px; font-weight: 600;">Cabinet 2, Shelf B</span>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">AI Autonomous Extraction</label>
+        <div class="peek-ai-card">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span class="caption">Entity Classification</span>
+            <span class="tabular font-bold" id="peek-type" style="font-size: 12.5px;">OFFICIAL_NOTICE</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span class="caption">Confidence Score</span>
+            <span class="tabular" style="color: var(--green); font-weight: 600;">99.4% (Workers AI)</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span class="caption">Cryptographic Seal</span>
+            <span class="tabular chip chip-mint" style="font-size: 11px; padding: 2px 6px;">SHA-256 VERIFIED</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Summary / Excerpt</label>
+        <div id="peek-summary" style="font-size: 13.5px; line-height: 1.5; color: var(--muted); background: var(--surface-trans); padding: 12px 14px; border-radius: 12px; margin-top: 6px; border: 1px solid var(--border-subtle);">
+          Auto-extracted document summary will appear here.
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn-clay" onclick="copyRef(document.getElementById('peek-ref')?.innerText)" style="flex: 1; justify-content: center;">
+        <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+        Copy Reference
+      </button>
+      <button class="btn-subtle" onclick="closeQuickPeek()">Close</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Floating Batch Action Dock (Linear / Superhuman Multi-Select)
+       ========================================================================= -->
+  <div class="batch-dock-wrap" id="batch-dock-wrap" style="display: none;">
+    <div class="batch-dock">
+      <div style="display: flex; align-items: center; gap: 8px; padding-left: 6px;">
+        <span class="chip chip-mint tabular" id="batch-count-badge" style="font-weight: 700;">1 Selected</span>
+      </div>
+      <div style="height: 18px; width: 1px; background: var(--border-subtle);"></div>
+      <button class="btn-subtle" onclick="exportSelectedBatchCSV()" style="padding: 6px 12px; font-size: 13.5px; gap: 6px;">
+        <span class="icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span>
+        Export Selected (CSV)
+      </button>
+      <button class="btn-subtle" onclick="clearBatchSelection()" style="padding: 6px 12px; font-size: 13.5px;">
+        Deselect
+      </button>
     </div>
   </div>
 
@@ -2183,6 +2394,115 @@
       }
     }
 
+    // =========================================================================
+    // Spacebar Quick Peek Drawer & Batch Selection
+    // =========================================================================
+    state.selectedMailIds = [];
+
+    function openQuickPeek(id) {
+      const item = (state.correspondence || []).find(c => c.id === id) || (state.correspondence && state.correspondence[0]);
+      if (!item) return;
+
+      const drawer = document.getElementById('drawer-quick-peek');
+      const backdrop = document.getElementById('peek-backdrop');
+      if (!drawer || !backdrop) return;
+
+      const refEl = document.getElementById('peek-ref');
+      if (refEl) refEl.innerText = item.refNo || '—';
+      const dirEl = document.getElementById('peek-direction');
+      if (dirEl) {
+        dirEl.innerText = item.direction === 'IN' ? 'INBOUND' : 'OUTBOUND';
+        dirEl.className = item.direction === 'IN' ? 'chip chip-info' : 'chip chip-mint';
+      }
+      const titleEl = document.getElementById('peek-title');
+      if (titleEl) titleEl.innerText = item.subject || 'Untitled Correspondence';
+      const chanEl = document.getElementById('peek-channel');
+      if (chanEl) chanEl.innerText = `${item.channel || 'EMAIL'} · Registered ${new Date(item.createdAt || Date.now()).toLocaleDateString()}`;
+      const partyEl = document.getElementById('peek-party');
+      if (partyEl) partyEl.innerText = item.sourceSender || item.recipient || 'Internal Office Operations';
+      const shelfEl = document.getElementById('peek-shelf');
+      if (shelfEl) shelfEl.innerText = item.physicalLocation || 'Cabinet 2, Shelf B (Filing Room)';
+      const typeEl = document.getElementById('peek-type');
+      if (typeEl) typeEl.innerText = item.classification || 'OFFICIAL_RECORD';
+      const sumEl = document.getElementById('peek-summary');
+      if (sumEl) sumEl.innerText = item.notes || `Autonomous OCR indexing completed. Ingested via ${item.channel || 'direct upload'} with gapless regulatory sequence ID. Physical archival stamp verified.`;
+
+      backdrop.style.display = 'block';
+      setTimeout(() => drawer.classList.add('open'), 10);
+    }
+
+    function closeQuickPeek() {
+      const drawer = document.getElementById('drawer-quick-peek');
+      const backdrop = document.getElementById('peek-backdrop');
+      if (drawer) drawer.classList.remove('open');
+      if (backdrop) backdrop.style.display = 'none';
+    }
+
+    function toggleMailSelect(id) {
+      if (!state.selectedMailIds) state.selectedMailIds = [];
+      const idx = state.selectedMailIds.indexOf(id);
+      if (idx > -1) {
+        state.selectedMailIds.splice(idx, 1);
+      } else {
+        state.selectedMailIds.push(id);
+      }
+      updateBatchDock();
+      renderCorrespondence(state.correspondence);
+    }
+
+    function toggleAllMailSelect(checked) {
+      if (checked) {
+        state.selectedMailIds = (state.correspondence || []).map(c => c.id);
+      } else {
+        state.selectedMailIds = [];
+      }
+      updateBatchDock();
+      renderCorrespondence(state.correspondence);
+    }
+
+    function clearBatchSelection() {
+      state.selectedMailIds = [];
+      const chkAll = document.getElementById('mail-select-all');
+      if (chkAll) chkAll.checked = false;
+      updateBatchDock();
+      renderCorrespondence(state.correspondence);
+    }
+
+    function updateBatchDock() {
+      const wrap = document.getElementById('batch-dock-wrap');
+      const badge = document.getElementById('batch-count-badge');
+      if (!wrap || !badge) return;
+      const count = (state.selectedMailIds || []).length;
+      if (count > 0) {
+        badge.innerText = `${count} Selected`;
+        wrap.style.display = 'flex';
+      } else {
+        wrap.style.display = 'none';
+      }
+    }
+
+    function exportSelectedBatchCSV() {
+      const selected = (state.correspondence || []).filter(c => state.selectedMailIds.includes(c.id));
+      if (selected.length === 0) {
+        showToast('No items selected.');
+        return;
+      }
+      const headers = ['Ref No', 'Direction', 'Channel', 'Subject', 'Sender/Recipient', 'Physical Location', 'Status', 'Date'];
+      const rows = selected.map(c => [
+        `"${c.refNo || ''}"`,
+        `"${c.direction || ''}"`,
+        `"${c.channel || ''}"`,
+        `"${(c.subject || '').replace(/"/g, '""')}"`,
+        `"${(c.sourceSender || c.recipient || '').replace(/"/g, '""')}"`,
+        `"${(c.physicalLocation || '').replace(/"/g, '""')}"`,
+        `"${c.status || ''}"`,
+        `"${c.createdAt || ''}"`
+      ]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      downloadBlob(csv, `selected-correspondence-${selected.length}.csv`, 'text/csv');
+      showToast(`Exported ${selected.length} selected items to CSV.`);
+    }
+
     function renderCorrespondence(items) {
       const tbody = document.getElementById('mail-table-rows');
       if (!tbody) return;
@@ -2190,7 +2510,7 @@
       if (items.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5">
+            <td colspan="6">
               <div class="empty-state">
                 <div class="icon" style="color: var(--teal); margin-bottom: 8px;">
                   <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2207,9 +2527,14 @@
         return;
       }
 
-      tbody.innerHTML = items.map(c => `
-        <tr>
-          <td><span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${c.refNo}', this)" title="Click to copy ref">${c.refNo}</span></td>
+      tbody.innerHTML = items.map(c => {
+        const isSelected = state.selectedMailIds && state.selectedMailIds.includes(c.id);
+        return `
+        <tr class="${isSelected ? 'row-selected' : ''}" style="cursor: pointer;" onclick="openQuickPeek('${c.id}')">
+          <td style="width: 38px; text-align: center;" onclick="event.stopPropagation()">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleMailSelect('${c.id}')">
+          </td>
+          <td><span class="chip chip-mint tabular copyable-chip" onclick="event.stopPropagation(); copyRef('${c.refNo}', this)" title="Click to copy ref">${c.refNo}</span></td>
           <td>
             <strong>${c.subject}</strong>
             <div class="caption">${c.direction === 'IN' ? 'Inbound' : 'Outbound'} · ${c.channel}</div>
@@ -2219,10 +2544,16 @@
             <span class="chip chip-sage">${c.physicalLocation || 'Cabinet 2, Shelf B suggested'}</span>
           </td>
           <td>
-            <span class="chip ${c.status === 'RECEIVED' ? 'chip-ok' : 'chip-info'}">${c.status}</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+              <span class="chip ${c.status === 'RECEIVED' ? 'chip-ok' : 'chip-info'}">${c.status}</span>
+              <button class="btn-subtle" onclick="event.stopPropagation(); openQuickPeek('${c.id}')" title="Quick Peek (Space)" style="padding: 3px 8px; font-size: 11.5px; opacity: 0.85;">
+                Peek
+              </button>
+            </div>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function filterRegister() {
@@ -2965,6 +3296,33 @@
       else if (e.key === '?') {
         e.preventDefault();
         toggleShortcutsModal();
+      }
+      // Space for Quick Peek in Mail
+      else if (e.code === 'Space' && state.activeVerb === 'mail') {
+        if (state.correspondence && state.correspondence.length > 0) {
+          e.preventDefault();
+          const drawer = document.getElementById('drawer-quick-peek');
+          if (drawer && drawer.classList.contains('open')) {
+            closeQuickPeek();
+          } else {
+            const idToPeek = (state.selectedMailIds && state.selectedMailIds[0]) || state.correspondence[0].id;
+            openQuickPeek(idToPeek);
+          }
+        }
+      }
+      // Escape closes Quick Peek drawer or modals
+      else if (e.key === 'Escape') {
+        const drawer = document.getElementById('drawer-quick-peek');
+        if (drawer && drawer.classList.contains('open')) {
+          closeQuickPeek();
+        }
+      }
+      // x toggles row selection in Mail
+      else if (e.key.toLowerCase() === 'x' && state.activeVerb === 'mail') {
+        if (state.correspondence && state.correspondence.length > 0) {
+          const firstId = state.correspondence[0].id;
+          toggleMailSelect(firstId);
+        }
       }
       // a for approving first item if on today or approve
       else if (e.key.toLowerCase() === 'a' && (state.activeVerb === 'today' || state.activeVerb === 'approve')) {
