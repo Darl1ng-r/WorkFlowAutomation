@@ -8,6 +8,7 @@ import { createInvoicesRouter } from "./routes/invoices.router";
 import { createApprovalsRouter } from "./routes/approvals.router";
 import { createKioskRouter } from "./routes/kiosk.router";
 import { createObligationsRouter } from "./routes/obligations.router";
+import { createRoomsRouter } from "./routes/rooms.router";
 import { CLIENT_HTML } from "@client/html-bundle";
 
 export interface AppOptions {
@@ -24,6 +25,13 @@ export function createApp(options: AppOptions): Hono {
   // Serve Interactive Client UI
   app.get("/", (c) => c.html(CLIENT_HTML));
   app.get("/kiosk", (c) => c.html(CLIENT_HTML));
+  app.get("/favicon.ico", (c) => {
+    return c.body(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#3b82f6"/><text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-size="60" fill="white">⚡</text></svg>`,
+      200,
+      { "Content-Type": "image/svg+xml" }
+    );
+  });
 
   // Health endpoint (public)
   app.get("/api/health", (c) => {
@@ -48,6 +56,7 @@ export function createApp(options: AppOptions): Hono {
   app.route("/api/invoices", createInvoicesRouter(container));
   app.route("/api/approvals", createApprovalsRouter(container));
   app.route("/api/obligations", createObligationsRouter(container));
+  app.route("/api/rooms", createRoomsRouter(container.db));
 
   return app;
 }

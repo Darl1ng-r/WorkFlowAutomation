@@ -247,4 +247,37 @@ describe("API End-to-End Integration Tests", () => {
     const body = (await res.json()) as any;
     expect(body.success).toBe(false);
   });
+
+  it("GET /api/rooms and POST /api/rooms/book should query and book meeting rooms", async () => {
+    // 1. Query rooms
+    const listRes = await app.request("/api/rooms");
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as any;
+    expect(listBody.success).toBe(true);
+    expect(Array.isArray(listBody.data)).toBe(true);
+
+    // 2. Book a room
+    const bookRes = await app.request("/api/rooms/book", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomName: "Board",
+        timeSlot: "14:00 - 15:30",
+        title: "Executive Strategy Review",
+        hostName: "CEO",
+      }),
+    });
+    expect(bookRes.status).toBe(201);
+    const bookBody = (await bookRes.json()) as any;
+    expect(bookBody.success).toBe(true);
+    expect(bookBody.data.roomName).toBe("Board");
+
+    // 3. Verify slot is now booked
+    const verifyRes = await app.request("/api/rooms");
+    const verifyBody = (await verifyRes.json()) as any;
+    const boardRoom = verifyBody.data.find((r: any) => r.name === "Board");
+    const bookedSlot = boardRoom.slots.find((s: any) => s.time === "14:00 - 15:30");
+    expect(bookedSlot.status).toBe("BOOKED");
+    expect(bookedSlot.title).toBe("Executive Strategy Review");
+  });
 });

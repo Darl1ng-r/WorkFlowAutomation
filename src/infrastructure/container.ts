@@ -34,6 +34,7 @@ export interface ServiceContainer {
   visitorRepo: IVisitorRepository;
   auditRepo: IAuditRepository;
   sequenceRepo: ISequenceRepository;
+  db?: D1Database | undefined;
   storagePort?: IStoragePort | undefined;
   notificationPort?: INotificationPort | undefined;
 
@@ -114,6 +115,7 @@ export function createContainerFromEnv(env: {
   );
 
   return {
+    db: env.DB,
     correspondenceRepo,
     documentRepo,
     invoiceRepo,

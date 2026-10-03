@@ -1,5 +1,6 @@
 import { createApp } from "./api/app";
 import { createContainerFromEnv } from "./infrastructure/container";
+export { IntakeWorkflow } from "./workflows/intake.workflow";
 
 export interface Env {
   DB: D1Database;

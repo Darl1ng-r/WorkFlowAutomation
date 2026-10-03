@@ -127,7 +127,47 @@ flowchart LR
 
 ---
 
-## 6. Repository Layout
+## 6. Design System: The "Four Verbs" Architecture
+
+The Office OS interface replaces traditional tabs with four focused operational verbs, governed by strict typographic, contrast, and tactile depth standards.
+
+### 🎨 Palette: Your Five, Put to Work
+- **Teal `#6BB5A6`**: Brand identity, selection rings.
+- **Green `#9BC870`**: Success states, dark-mode primary actions.
+- **Sage `#CAD7A5`**: Booked rooms, neutral badges.
+- **Mint `#C8E4D6`**: Selected states, secondary chips.
+- **Aqua `#94CDD8`**: Information chips, hero highlights.
+- **Deep Teal `#1C5A4F` & Deep Ink `#10302B`**: Primary buttons and high-contrast text.
+
+| Mode | Surface | Ink Contrast | Primary Button | Button Contrast |
+|---|---|---|---|---|
+| **Light** | `#EAF4EF` | `#10302B` (**13:1**) | `#1C5A4F` (white text) | **8.1:1** |
+| **Dark** | `#0B1816` | `#E8F5F0` (**15:1**) | `#9BC870` (`#0B1816` text) | **9.0:1** |
+
+### 🔤 Typography & Contrast Standards
+- **Headings**: `Bricolage Grotesque` (40/44 hero titles, 19–28 section headers, weight 600).
+- **Body & Captions**: `Figtree` (15/24 body, 13.5 captions).
+- **Numbers**: Tabular numbers (`font-variant-numeric: tabular-nums`) across all reference numbers, amounts, and timers.
+- **Text Rules**: Sentence case across all surfaces — strictly zero all-caps.
+
+### 📐 Space, Shape & Depth
+- **Grid & Radii**: 8px grid, 16px tile gap, 22px tile padding. Radii: chips full (9999px), buttons 16px, inputs 14px, cards 20px, tiles 28px, dialogs 30px.
+- **Glassmorphism**: 62% surface opacity, 18px blur, 1px subtle white edge on tiles and nav.
+- **Clay Depth**: Inner top highlight and bottom shadow on buttons and badges for a tactile, pressable feel.
+- **Spring Motion**: `cubic-bezier(.34, 1.56, .64, 1)` on press and dismiss (350ms duration).
+
+### ⚡ Before & After: Click Depth Cuts
+| Action | Old Flow | Office OS Flow | Mechanism |
+|---|:---:|:---:|---|
+| **Log a scanned letter** | 9 clicks | **2 clicks** | Drop-to-read intake card on Mail screen |
+| **Approve drafted reply** | 6 clicks | **1 click** | One-click Approve with 6-second floating Undo toast |
+| **Check in a visitor** | 7 clicks | **3 clicks** | Streamlined walk-in form with automated host alert |
+| **Book a meeting room** | 8 clicks | **2 clicks** | Tap free slot directly on timeline to confirm |
+| **Find a document** | 5 clicks | **1 click** | Global `Ctrl K` command palette with search-first list |
+
+---
+
+## 7. Repository Layout
 
 ```
 .
@@ -135,12 +175,13 @@ flowchart LR
 │   ├── ARCHITECTURE.md       # Comprehensive High-Level System Architecture
 │   ├── ZERO_BUDGET_SETUP.md  # Detailed $0/month deployment walkthrough
 │   └── SOP_TEMPLATE.md       # Standard Operating Procedure template for office teams
-├── src/                      # Source code (API, Workflows, Client)
-│   ├── api/                  # Hono-based REST API handlers
-│   ├── workflows/            # Cloudflare Workflows durable state machines
-│   ├── adapters/             # Google Workspace, CRM & Accounting integrations
-│   └── client/               # React / Tailwind front-desk & register interface
-├── schema.sql                # D1 / SQLite database schema migrations
+├── src/                      # Source code (Clean Architecture: Domain, App, Infra, API, Client)
+│   ├── domain/               # Enterprise business entities, contracts & autonomy policies
+│   ├── application/          # Use cases, validation & ports
+│   ├── infrastructure/       # D1 SQLite repos, R2 storage, Workers AI & container
+│   ├── api/                  # Hono edge routers with response envelope & Access auth
+│   └── client/               # Single-page client dashboard & reception kiosk bundle
+├── migrations/               # D1 SQLite database schema migrations
 ├── wrangler.jsonc            # Cloudflare Workers configuration & bindings
 └── README.md                 # Project introduction and operational guide
 ```

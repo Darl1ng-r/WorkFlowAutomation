@@ -1,773 +1,2010 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Office OS — Autonomous Office Operating System</title>
+  <title>Office OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
   <style>
+    /* ==========================================================================
+       Design System Tokens & Variables
+       ========================================================================== */
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(18, 24, 38, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.12);
-      --primary: #3b82f6;
-      --primary-glow: rgba(59, 130, 246, 0.25);
-      --accent: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      /* Palette: Your five */
+      --teal: #6BB5A6;
+      --green: #9BC870;
+      --sage: #CAD7A5;
+      --mint: #C8E4D6;
+      --aqua: #94CDD8;
+
+      /* Deep inks */
+      --deep-teal: #1C5A4F;
+      --deep-ink: #10302B;
+
+      /* Light Mode Spec (Default) */
+      --bg: #EAF4EF;
+      --surface-tile: rgba(255, 255, 255, 0.62);
+      --surface-card: rgba(255, 255, 255, 0.88);
+      --surface-solid: #FFFFFF;
+      --surface-hover: rgba(255, 255, 255, 0.95);
+      --glass-edge: rgba(255, 255, 255, 0.85);
+      --border-subtle: rgba(28, 90, 79, 0.12);
+
+      --ink: #10302B;   /* 13:1 on #EAF4EF */
+      --muted: #35564F; /* 7.5:1 on #EAF4EF */
+
+      --btn-primary-bg: #1C5A4F;   /* 8.1:1 with white text */
+      --btn-primary-text: #FFFFFF;
+      --btn-secondary-bg: var(--mint);
+      --btn-secondary-text: var(--deep-ink);
+
+      --chip-bg: rgba(200, 228, 214, 0.55);
+      --chip-text: var(--deep-ink);
+
+      /* Semantic pairs (Light) */
+      --sem-ok-text: #2F6B1F;
+      --sem-ok-bg: #E4F4DC;
+      --sem-warn-text: #7A4A00;
+      --sem-warn-bg: #FDF3DA;
+      --sem-error-text: #8C1D2C;
+      --sem-error-bg: #FCE8EB;
+      --sem-info-text: #0F4F63;
+      --sem-info-bg: #E1F4F9;
+
+      /* Clay depth */
+      --clay-btn-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 -2px 3px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(16, 48, 43, 0.08);
+      --clay-btn-pressed: inset 0 2px 4px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(16, 48, 43, 0.04);
+      --clay-badge-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1.5px 2px rgba(0, 0, 0, 0.1);
+
+      /* Typography Scale */
+      --font-heading: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Motion */
+      --spring: cubic-bezier(.34, 1.56, .64, 1);
     }
 
+    [data-theme="dark"] {
+      /* Dark Mode Spec */
+      --bg: #0B1816;
+      --surface-tile: rgba(18, 38, 34, 0.62);
+      --surface-card: rgba(20, 44, 39, 0.88);
+      --surface-solid: #122622;
+      --surface-hover: rgba(28, 58, 52, 0.95);
+      --glass-edge: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(107, 181, 166, 0.16);
+
+      --ink: #E8F5F0;   /* 15:1 on #0B1816 */
+      --muted: #7E9F97;
+
+      --btn-primary-bg: #9BC870;   /* 9:1 with #0B1816 text */
+      --btn-primary-text: #0B1816;
+      --btn-secondary-bg: rgba(200, 228, 214, 0.14);
+      --btn-secondary-text: var(--ink);
+
+      --chip-bg: rgba(155, 200, 112, 0.16);
+      --chip-text: var(--ink);
+
+      /* Semantic pairs (Dark) */
+      --sem-ok-text: #9BC870;
+      --sem-ok-bg: rgba(155, 200, 112, 0.18);
+      --sem-warn-text: #E5A83B;
+      --sem-warn-bg: rgba(229, 168, 59, 0.18);
+      --sem-error-text: #F87171;
+      --sem-error-bg: rgba(248, 113, 113, 0.18);
+      --sem-info-text: #94CDD8;
+      --sem-info-bg: rgba(148, 205, 216, 0.18);
+
+      --clay-btn-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.28), inset 0 -2px 3px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.3);
+      --clay-btn-pressed: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+      --clay-badge-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ==========================================================================
+       Global Resets & Base Styles
+       ========================================================================== */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
       background-color: var(--bg);
-      color: var(--text);
-      font-family: var(--font-sans);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 24px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background-image: 
-        radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
+      text-transform: none; /* strictly sentence case */
+      transition: background-color 300ms ease, color 300ms ease;
     }
 
-    /* Top Navigation Header */
-    header {
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(9, 13, 22, 0.85);
-      backdrop-filter: blur(12px);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      padding: 0.85rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    /* Tabular numeric data */
+    .tabular, .mono-ref, .time-val, .metric-big, .badge-num {
+      font-variant-numeric: tabular-nums;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .brand-logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #3b82f6, #10b981);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: #fff;
-      font-size: 1.1rem;
-      box-shadow: 0 0 15px var(--primary-glow);
-    }
-
-    .brand-title {
-      font-size: 1.15rem;
-      font-weight: 700;
+    /* Headings Scale */
+    h1, h2, h3, h4 {
+      font-family: var(--font-heading);
+      color: var(--ink);
+      text-transform: none;
+      font-weight: 600;
       letter-spacing: -0.02em;
     }
 
-    .brand-badge {
-      font-size: 0.7rem;
-      background: rgba(59, 130, 246, 0.15);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      font-weight: 600;
+    h1 {
+      font-size: 40px;
+      line-height: 44px;
+      font-weight: 700;
     }
 
-    /* Navigation Tabs */
-    .nav-tabs {
-      display: flex;
-      gap: 0.5rem;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 0.25rem;
-      border-radius: 10px;
-      border: 1px solid var(--card-border);
+    h2 {
+      font-size: 28px;
+      line-height: 34px;
     }
 
-    .nav-tab {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 0.5rem 1rem;
-      font-family: inherit;
-      font-size: 0.875rem;
-      font-weight: 600;
-      border-radius: 7px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+    h3 {
+      font-size: 19px;
+      line-height: 26px;
     }
 
-    .nav-tab:hover {
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.05);
+    p.subtext {
+      font-size: 15px;
+      line-height: 24px;
+      color: var(--muted);
     }
 
-    .nav-tab.active {
-      background: var(--primary);
-      color: #fff;
-      box-shadow: 0 2px 10px var(--primary-glow);
+    .caption {
+      font-size: 13.5px;
+      line-height: 20px;
+      color: var(--muted);
     }
 
-    /* System Status Bar */
-    .system-status {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.85rem;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-    }
-
-    /* Main Container */
-    main {
-      flex: 1;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    /* Metrics Grid */
-    .metrics-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1rem;
-    }
-
-    .metric-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      backdrop-filter: blur(8px);
-      transition: border-color 0.2s;
-    }
-
-    .metric-card:hover {
-      border-color: var(--card-hover);
-    }
-
-    .metric-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      font-weight: 600;
-      margin-bottom: 0.35rem;
-    }
-
-    .metric-value {
-      font-size: 1.75rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .metric-sub {
-      font-size: 0.75rem;
-      color: var(--accent);
-      margin-top: 0.25rem;
-      font-weight: 500;
-    }
-
-    /* Section Card */
-    .section-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      backdrop-filter: blur(8px);
-    }
-
-    .section-header {
+    /* ==========================================================================
+       Navigation Bar (Glass)
+       ========================================================================== */
+    nav.top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--surface-tile);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--glass-edge);
+      padding: 14px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
+      transition: background 300ms ease, border-color 300ms ease;
     }
 
-    .section-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    /* Buttons */
-    .btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.55rem 1.15rem;
-      font-family: inherit;
-      font-size: 0.875rem;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      display: inline-flex;
+    .nav-left {
+      display: flex;
       align-items: center;
-      gap: 0.5rem;
-      transition: all 0.15s ease;
+      gap: 16px;
     }
 
-    .btn:hover {
-      filter: brightness(1.1);
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 9999px;
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: var(--clay-btn-shadow);
+      cursor: pointer;
+    }
+
+    /* Four Verbs Navigation */
+    .verb-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 4px;
+      border-radius: 9999px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    [data-theme="dark"] .verb-tabs {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .verb-tab {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px 18px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 350ms var(--spring);
+    }
+
+    .verb-tab:hover {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .verb-tab.active {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      box-shadow: var(--clay-btn-shadow);
+    }
+
+    .verb-badge {
+      background: var(--sem-warn-bg);
+      color: var(--sem-warn-text);
+      font-size: 12px;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Ctrl K Quick Search Trigger */
+    .search-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 13.5px;
+      color: var(--muted);
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 350ms var(--spring);
+    }
+
+    .search-pill:hover {
+      border-color: var(--teal);
+      color: var(--ink);
       transform: translateY(-1px);
     }
 
-    .btn-secondary {
+    .kbd-chip {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--ink);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: var(--font-heading);
+    }
+
+    [data-theme="dark"] .kbd-chip {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Theme Toggle */
+    .icon-btn {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--ink);
+      box-shadow: var(--clay-btn-shadow);
+      transition: all 350ms var(--spring);
+    }
+
+    .icon-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .icon-btn:active {
+      box-shadow: var(--clay-btn-pressed);
+      transform: scale(0.96);
+    }
+
+    /* Primary Action Button (Clay) */
+    .btn-clay {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      border: none;
+      padding: 9px 20px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--clay-btn-shadow);
+      transition: all 350ms var(--spring);
+    }
+
+    .btn-clay:hover {
+      filter: brightness(1.04);
+      transform: translateY(-1px);
+    }
+
+    .btn-clay:active {
+      box-shadow: var(--clay-btn-pressed);
+      transform: scale(0.98);
+    }
+
+    .btn-secondary-clay {
+      background: var(--btn-secondary-bg);
+      color: var(--btn-secondary-text);
+      box-shadow: var(--clay-btn-shadow);
+    }
+
+    .btn-mint {
+      background: var(--mint);
+      color: var(--deep-ink);
+    }
+
+    .btn-sage {
+      background: var(--sage);
+      color: var(--deep-ink);
+    }
+
+    .btn-subtle {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--muted);
+      border-radius: 16px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 200ms ease;
+    }
+
+    .btn-subtle:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--ink);
+    }
+
+    /* ==========================================================================
+       Main Workspace Layout
+       ========================================================================== */
+    main.workspace {
+      flex: 1;
+      max-width: 1320px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Hero Greeting Header */
+    .greeting-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 8px 0 12px 0;
+    }
+
+    .greeting-header h1 {
+      margin-bottom: 6px;
+    }
+
+    /* Tiles System (Glass + 28px Radius + 22px Padding) */
+    .tile {
+      background: var(--surface-tile);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-edge);
+      border-radius: 28px;
+      padding: 22px;
+      box-shadow: 0 4px 20px -4px rgba(16, 48, 43, 0.04);
+      position: relative;
+    }
+
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    /* Grid Layouts (8px grid, 16px tile gap) */
+    .today-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .today-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metrics-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Metric Cards */
+    .metric-big {
+      font-family: var(--font-heading);
+      font-size: 56px;
+      line-height: 60px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.03em;
+      margin: 8px 0 4px 0;
+    }
+
+    /* Needs Your Call Cards (20px Radius) */
+    .call-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+      transition: all 350ms var(--spring);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .call-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .call-card.dismissing {
+      opacity: 0;
+      transform: translateX(40px) scale(0.95);
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border: none;
+    }
+
+    .call-card:hover {
+      border-color: var(--teal);
+      transform: translateY(-1px);
+    }
+
+    .call-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .call-title {
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 22px;
+    }
+
+    .call-meta {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .call-reason {
+      background: rgba(107, 181, 166, 0.12);
+      border-left: 3px solid var(--teal);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      line-height: 20px;
+      color: var(--ink);
+      margin: 10px 0 14px 0;
+    }
+
+    .call-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Chips (Full radius 9999px) */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      background: var(--chip-bg);
+      color: var(--chip-text);
+      white-space: nowrap;
+    }
+
+    .chip-ok {
+      background: var(--sem-ok-bg);
+      color: var(--sem-ok-text);
+    }
+
+    .chip-warn {
+      background: var(--sem-warn-bg);
+      color: var(--sem-warn-text);
+    }
+
+    .chip-error {
+      background: var(--sem-error-bg);
+      color: var(--sem-error-text);
+    }
+
+    .chip-info {
+      background: var(--sem-info-bg);
+      color: var(--sem-info-text);
+    }
+
+    .chip-sage {
+      background: var(--sage);
+      color: var(--deep-ink);
+    }
+
+    .chip-mint {
+      background: var(--mint);
+      color: var(--deep-ink);
+    }
+
+    /* Rooms Today Interactive Matrix */
+    .rooms-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .room-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 12px 16px;
+      transition: all 350ms var(--spring);
+    }
+
+    .room-row:hover {
+      border-color: var(--teal);
+    }
+
+    .room-name {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .room-slots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .slot-pill {
+      font-size: 13.5px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 350ms var(--spring);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .slot-booked {
+      background: var(--sage);
+      color: var(--deep-ink);
+      font-weight: 600;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);
+    }
+
+    .slot-free {
+      background: transparent;
+      border: 1px dashed var(--border-subtle);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .slot-free:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+      background: rgba(107, 181, 166, 0.08);
+      transform: scale(1.03);
+    }
+
+    /* Renewing Soon Cards */
+    .renewal-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+    }
+
+    .renewal-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .renewal-days {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* AI Budget Meter */
+    .budget-bar-bg {
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 9999px;
+      height: 10px;
+      width: 100%;
+      overflow: hidden;
+      margin: 12px 0 8px 0;
+    }
+
+    [data-theme="dark"] .budget-bar-bg {
       background: rgba(255, 255, 255, 0.08);
-      color: var(--text);
     }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.14);
+    .budget-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--green));
+      border-radius: 9999px;
+      transition: width 600ms ease;
     }
 
-    .btn-success {
-      background: var(--accent);
+    /* ==========================================================================
+       Drop-To-Read Intake (Mail View)
+       ========================================================================== */
+    .dropzone-hero {
+      border: 2px dashed var(--teal);
+      background: rgba(107, 181, 166, 0.06);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 350ms var(--spring);
+      margin-bottom: 20px;
     }
 
-    .btn-danger {
-      background: var(--danger);
+    .dropzone-hero:hover {
+      background: rgba(107, 181, 166, 0.12);
+      transform: scale(1.005);
     }
 
-    /* Data Table */
+    .dropzone-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .ai-extracted-preview {
+      display: none;
+      background: var(--surface-card);
+      border: 1px solid var(--teal);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin-top: 16px;
+      animation: popIn 350ms var(--spring);
+      text-align: left;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.96) translateY(-8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Table Styles */
+    .table-tile {
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .table-tile-header {
+      padding: 22px 24px 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-filter-bar {
+      display: flex;
+      gap: 12px;
+      padding: 0 24px 16px 24px;
+    }
+
+    .filter-input {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 8px 16px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--ink);
+      flex: 1;
+      outline: none;
+      transition: border-color 200ms ease;
+    }
+
+    .filter-input:focus {
+      border-color: var(--teal);
+    }
+
     .table-container {
       overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
+      border-top: 1px solid var(--border-subtle);
     }
 
-    table {
+    table.data-table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.875rem;
     }
 
-    th {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 0.85rem 1rem;
-      color: var(--text-muted);
+    table.data-table th {
+      padding: 12px 20px;
+      font-size: 13.5px;
       font-weight: 600;
-      border-bottom: 1px solid var(--card-border);
+      color: var(--muted);
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.02);
     }
 
-    td {
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--card-border);
+    table.data-table td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 15px;
+      color: var(--ink);
       vertical-align: middle;
     }
 
-    tr:last-child td {
-      border-bottom: none;
+    table.data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.45);
     }
 
-    tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
+    [data-theme="dark"] table.data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.04);
     }
 
-    .mono-badge {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      font-weight: 600;
-      background: rgba(59, 130, 246, 0.12);
-      color: #93c5fd;
-      border: 1px solid rgba(59, 130, 246, 0.25);
-      padding: 0.2rem 0.5rem;
-      border-radius: 6px;
-      display: inline-block;
+    /* Floating 6-Second Undo Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 350ms var(--spring);
     }
 
-    .status-pill {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      text-transform: uppercase;
+    .toast-container.active {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .status-received { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .status-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-    .status-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-    /* Forms */
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .form-group {
+    .undo-toast {
+      background: var(--deep-ink);
+      color: #FFFFFF;
+      border-radius: 20px;
+      padding: 12px 20px;
       display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
     }
 
-    label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
+    [data-theme="dark"] .undo-toast {
+      background: #142C27;
+      color: var(--ink);
     }
 
-    input, select, textarea {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      padding: 0.65rem 0.85rem;
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      transition: all 0.2s;
+    .toast-progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--green);
+      width: 100%;
+      transition: width 6000ms linear;
     }
 
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+    .btn-undo {
+      background: var(--green);
+      color: #0B1816;
+      border: none;
+      border-radius: 9999px;
+      padding: 4px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--clay-btn-shadow);
+      transition: transform 150ms ease;
     }
 
-    /* Modal */
+    .btn-undo:hover {
+      transform: scale(1.05);
+    }
+
+    /* Ctrl K Command Palette Modal (30px Radius) */
     .modal-backdrop {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(6px);
-      z-index: 100;
+      background: rgba(11, 24, 22, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 90;
       align-items: center;
       justify-content: center;
     }
 
-    .modal {
-      background: #111827;
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+    .modal-palette {
+      background: var(--surface-card);
+      border: 1px solid var(--glass-edge);
+      border-radius: 30px;
       width: 90%;
-      max-width: 580px;
-      padding: 2rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      max-width: 600px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      animation: popIn 300ms var(--spring);
     }
 
-    .modal-header {
+    .palette-search-box {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
+      gap: 12px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .close-btn {
+    .palette-search-box input {
+      flex: 1;
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      font-size: 1.5rem;
+      font-family: var(--font-body);
+      font-size: 18px;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .palette-results {
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 12px 14px;
+    }
+
+    .palette-group-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 8px 12px 4px 12px;
+    }
+
+    .palette-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 14px;
       cursor: pointer;
+      transition: all 150ms ease;
     }
 
-    /* Badge Preview */
-    .badge-card {
-      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 2px dashed rgba(59, 130, 246, 0.4);
-      border-radius: 12px;
-      padding: 1.5rem;
+    .palette-item:hover, .palette-item.selected {
+      background: rgba(107, 181, 166, 0.15);
+      color: var(--ink);
+    }
+
+    /* Skeleton rows for loading state */
+    .skeleton-row {
+      height: 48px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.03) 25%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.03) 75%);
+      background-size: 200% 100%;
+      animation: skeletonPulse 1.5s infinite;
+      border-radius: 10px;
+      margin: 8px 0;
+    }
+
+    @keyframes skeletonPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Empty State */
+    .empty-state {
+      padding: 48px 24px;
       text-align: center;
-      margin-top: 1.5rem;
     }
 
-    .badge-number {
-      font-family: var(--font-mono);
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #60a5fa;
-      letter-spacing: 0.05em;
-      margin: 0.5rem 0;
+    .empty-state h3 {
+      margin-bottom: 6px;
+    }
+
+    /* New row highlight flash */
+    @keyframes rowFlash {
+      0% { background-color: rgba(107, 181, 166, 0.35); }
+      100% { background-color: transparent; }
+    }
+
+    .row-flash {
+      animation: rowFlash 2s ease-out;
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
-  <header>
-    <div class="brand">
-      <div class="brand-logo">O</div>
-      <div>
-        <div class="brand-title">Office OS</div>
-      </div>
-      <span class="brand-badge">Zero-Budget Tier</span>
-    </div>
-
-    <nav class="nav-tabs">
-      <button class="nav-tab active" onclick="switchView('register')">📋 Register</button>
-      <button class="nav-tab" onclick="switchView('kiosk')">🛎️ Front Desk</button>
-      <button class="nav-tab" onclick="switchView('approvals')">⚖️ Approvals (L2)</button>
-      <button class="nav-tab" onclick="switchView('renewals')">🛡️ Renewals</button>
-    </nav>
-
-    <div class="system-status">
-      <div class="status-dot"></div>
-      <span id="health-status">Checking system...</span>
-    </div>
-  </header>
-
-  <!-- Main Workspace -->
-  <main>
-    <!-- Metrics Bar -->
-    <div class="metrics-bar">
-      <div class="metric-card">
-        <div class="metric-label">Estimated Hours Saved</div>
-        <div class="metric-value" id="metric-hours">42.5 h</div>
-        <div class="metric-sub">↑ 8.2 h vs previous sprint</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Anomalies & Errors Caught</div>
-        <div class="metric-value" id="metric-anomalies">14</div>
-        <div class="metric-sub">VAT mismatches & duplicate files</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Active Visitors in Office</div>
-        <div class="metric-value" id="metric-visitors">0</div>
-        <div class="metric-sub">Front Desk reception</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Daily AI Neurons Budget</div>
-        <div class="metric-value" id="metric-neurons">10,000</div>
-        <div class="metric-sub">Free Allowance (Resets 00:00 UTC)</div>
+  <!-- Top Navigation (Four Verbs: Today, Mail, Desk, Approve) -->
+  <nav class="top-bar">
+    <div class="nav-left">
+      <div class="brand-mark" onclick="switchVerb('today')" title="Office OS Home">O</div>
+      <div class="verb-tabs">
+        <button class="verb-tab active" id="tab-today" onclick="switchVerb('today')">
+          Today
+        </button>
+        <button class="verb-tab" id="tab-mail" onclick="switchVerb('mail')">
+          Mail
+        </button>
+        <button class="verb-tab" id="tab-desk" onclick="switchVerb('desk')">
+          Desk
+        </button>
+        <button class="verb-tab" id="tab-approve" onclick="switchVerb('approve')">
+          Approve
+          <span class="verb-badge" id="badge-calls-count">3</span>
+        </button>
       </div>
     </div>
 
-    <!-- VIEW 1: Correspondence Register -->
-    <div id="view-register" class="section-card">
-      <div class="section-header">
+    <div class="nav-right">
+      <div class="search-pill" onclick="openPalette()">
+        <span>Search anything...</span>
+        <span class="kbd-chip">Ctrl K</span>
+      </div>
+
+      <button class="btn-clay" onclick="triggerFastLog()">
+        ＋ Log something
+      </button>
+
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle Light / Dark mode">
+        🌙
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content Workspace -->
+  <main class="workspace">
+
+    <!-- =====================================================================
+         VERB 1: TODAY (Executive Cockpit)
+         ===================================================================== -->
+    <div id="view-today">
+      <!-- Greeting Header -->
+      <div class="greeting-header">
         <div>
-          <h2 class="section-title">Central Correspondence Register</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-            Immutable intake log with gapless reference numbers and physical shelf tracking
-          </p>
-        </div>
-        <button class="btn" onclick="openModal('modal-intake')">＋ Register Inbound Item</button>
-      </div>
-
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Reference No</th>
-              <th>Channel</th>
-              <th>Direction</th>
-              <th>Subject</th>
-              <th>Sender / Source</th>
-              <th>Physical Location</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="register-rows">
-            <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                Loading correspondence register...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- VIEW 2: Front Desk Kiosk -->
-    <div id="view-kiosk" class="section-card" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Front Desk & Visitor Reception</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-            Self-check-in kiosk for guests with instant host employee alert
+          <h1 id="greeting-title">Good evening, Office</h1>
+          <p class="subtext">
+            <strong id="calls-stat" class="tabular">3 things</strong> need your call. Everything else ran itself.
           </p>
         </div>
       </div>
 
-      <div class="form-grid">
-        <form id="kiosk-form" onsubmit="handleVisitorCheckIn(event)">
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="vis-name">Visitor Full Name *</label>
-            <input type="text" id="vis-name" required placeholder="e.g. John Doe">
-          </div>
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="vis-company">Company / Organization</label>
-            <input type="text" id="vis-company" placeholder="e.g. Ministry of Commerce">
-          </div>
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="vis-host">Host Employee Email *</label>
-            <input type="email" id="vis-host" required placeholder="e.g. manager@company.com">
-          </div>
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="vis-purpose">Purpose of Visit *</label>
-            <input type="text" id="vis-purpose" required placeholder="e.g. Audit meeting, Vendor consultation">
-          </div>
-          <div style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-            <input type="checkbox" id="vis-nda" required>
-            <label for="vis-nda" style="color: var(--text);">I agree to the office visitor confidentiality & safety terms</label>
-          </div>
-          <button type="submit" class="btn btn-success" style="width: 100%;">Complete Check-In & Print Badge</button>
-        </form>
-
-        <div id="badge-display">
-          <div class="badge-card">
-            <div style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">
-              Visitor Badge Preview
+      <!-- Today Grid -->
+      <div class="today-grid">
+        
+        <!-- Left: Needs Your Call Queue -->
+        <div class="tile">
+          <div class="tile-header">
+            <div>
+              <h2>Needs your call</h2>
+              <p class="caption">AI read, filed and drafted these. You approve what leaves the office.</p>
             </div>
-            <div class="badge-number" id="issued-badge">V-READY</div>
-            <div id="issued-name" style="font-weight: 700; font-size: 1.1rem;">Awaiting check-in</div>
-            <div id="issued-host" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">Host will be notified automatically via Google Chat</div>
+            <span class="chip chip-warn"><span id="badge-call-items" class="tabular">3</span> pending</span>
+          </div>
+
+          <div id="calls-list">
+            <!-- Dynamic approval cards seeded from API -->
+          </div>
+        </div>
+
+        <!-- Right Column: Metrics, Rooms & Obligations -->
+        <div class="metrics-col">
+          
+          <!-- Metric Tiles Row (Time given back + In the office) -->
+          <div class="metrics-row">
+            <!-- Time Given Back Tile -->
+            <div class="tile">
+              <span class="caption">Time given back</span>
+              <div class="metric-big tabular" id="metric-hrs">42.5 hrs</div>
+              <p class="caption">
+                <span class="chip chip-ok" style="padding: 2px 8px; font-size: 12px;">+8.2 hrs</span> vs last sprint · 14 errors caught
+              </p>
+            </div>
+
+            <!-- In the Office Tile -->
+            <div class="tile">
+              <span class="caption">In the office</span>
+              <div class="metric-big tabular" id="metric-visitors">1</div>
+              <div id="guest-quick-status" class="caption">
+                Tariq Al-Harbi (KPMG)
+                <button class="btn-subtle" style="padding: 2px 8px; font-size: 11px; margin-left: 4px;" onclick="checkoutFirstGuest()">Check out</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rooms Today Tile -->
+          <div class="tile">
+            <div class="tile-header" style="margin-bottom: 8px;">
+              <div>
+                <h3>Rooms today</h3>
+                <p class="caption">Tap a free slot to book.</p>
+              </div>
+            </div>
+
+            <div class="rooms-list" id="rooms-container">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Renewing Soon Tile (Obligations) -->
+          <div class="tile">
+            <div class="tile-header" style="margin-bottom: 10px;">
+              <div>
+                <h3>Renewing soon</h3>
+                <p class="caption">Proactive obligations & compliance tracking</p>
+              </div>
+              <button class="btn-subtle" onclick="triggerSweep()">Run sweep</button>
+            </div>
+
+            <div id="renewals-container">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- AI Budget Today Tile -->
+          <div class="tile">
+            <div class="tile-header" style="margin-bottom: 6px;">
+              <div>
+                <h3>AI budget today</h3>
+                <p class="caption">Free tier allowance · resets 00:00 UTC</p>
+              </div>
+              <span class="chip chip-info tabular" id="budget-percent">18%</span>
+            </div>
+            <div class="metric-big" style="font-size: 32px; line-height: 38px;">
+              <span id="budget-used" class="tabular">1,820</span> <span style="font-size: 18px; color: var(--muted); font-weight: 500;">/ 10,000</span>
+            </div>
+            <div class="budget-bar-bg">
+              <div class="budget-bar-fill" id="budget-fill" style="width: 18%;"></div>
+            </div>
+            <p class="caption">Cloudflare Workers AI (Qwen-30B) · zero budget active</p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         VERB 2: MAIL (Correspondence Register)
+         ===================================================================== -->
+    <div id="view-mail" style="display: none;">
+      <div class="greeting-header">
+        <div>
+          <h1>Correspondence</h1>
+          <p class="subtext">Central Correspondence Register — Every letter and email, numbered and shelved automatically.</p>
+        </div>
+      </div>
+
+      <!-- Drop-to-Read Intake Hero (9 → 2 clicks) -->
+      <div class="dropzone-hero" id="intake-dropzone" onclick="simulateDrop()">
+        <div style="font-size: 32px; margin-bottom: 8px;">📥</div>
+        <div class="dropzone-title">Drop a file here</div>
+        <p class="subtext">Drop a letter, forward an email or take a photo. AI fills in the rest.</p>
+        <div style="margin-top: 12px; display: flex; justify-content: center; gap: 8px;">
+          <span class="chip chip-mint">⚡ Click to simulate Municipality Tax Notice scan</span>
+        </div>
+      </div>
+
+      <!-- Instant AI Extracted Preview Card (Ready to file in 1 click) -->
+      <div class="ai-extracted-preview" id="intake-preview-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <span class="chip chip-ok" style="margin-bottom: 6px;">AI extracted (98% confidence)</span>
+            <h3 id="preview-subject">Municipality Tax Notice 2026</h3>
+            <p class="caption">From: <strong id="preview-from">Greater Amman Municipality</strong></p>
+          </div>
+          <span class="chip chip-sage tabular" id="preview-shelf">Cabinet 2, Shelf B suggested</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+          <button class="btn-clay" onclick="confirmIntake()">File to register (Assign Ref)</button>
+          <button class="btn-subtle" onclick="cancelIntake()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Correspondence Table Tile -->
+      <div class="tile table-tile">
+        <div class="table-tile-header">
+          <div>
+            <h3>Central register</h3>
+            <p class="caption">Cryptographically chained intake audit log</p>
+          </div>
+        </div>
+
+        <div class="search-filter-bar">
+          <input type="text" id="mail-search" class="filter-input" placeholder="Search by reference, sender, subject or shelf location..." oninput="filterRegister()">
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref</th>
+                <th>Subject</th>
+                <th>From</th>
+                <th>Shelf</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="mail-table-rows">
+              <tr>
+                <td colspan="5">
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         VERB 3: DESK (Front Desk Reception & Rooms)
+         ===================================================================== -->
+    <div id="view-desk" style="display: none;">
+      <div class="greeting-header">
+        <div>
+          <h1>Front Desk & Visitor Reception</h1>
+          <p class="subtext">3-click visitor check-in, active office badges, and meeting rooms.</p>
+        </div>
+        <a href="/kiosk" target="_blank" class="btn-clay btn-secondary-clay">
+          ↗ Open guest kiosk mode
+        </a>
+      </div>
+
+      <div class="today-grid">
+        <!-- 3-Click Visitor Check-In Form (7 → 3 clicks) -->
+        <div class="tile">
+          <div class="tile-header">
+            <div>
+              <h2>Quick guest check-in</h2>
+              <p class="caption">Log a walk-in visitor in 3 clicks with automated host notification.</p>
+            </div>
+          </div>
+
+          <form id="quick-visitor-form" onsubmit="submitQuickVisitor(event)">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div>
+                <label class="caption" style="display: block; margin-bottom: 4px;">Visitor full name *</label>
+                <input type="text" id="guest-name" required placeholder="e.g. Elena Rostova" class="filter-input" style="width: 100%;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label class="caption" style="display: block; margin-bottom: 4px;">Company</label>
+                  <input type="text" id="guest-company" placeholder="e.g. Apex Global" class="filter-input" style="width: 100%;">
+                </div>
+                <div>
+                  <label class="caption" style="display: block; margin-bottom: 4px;">Host employee *</label>
+                  <input type="email" id="guest-host" required placeholder="manager@company.com" class="filter-input" style="width: 100%;">
+                </div>
+              </div>
+
+              <div>
+                <label class="caption" style="display: block; margin-bottom: 4px;">Purpose of visit *</label>
+                <input type="text" id="guest-purpose" required placeholder="e.g. Q4 Partnership meeting" class="filter-input" style="width: 100%;">
+              </div>
+
+              <button type="submit" class="btn-clay" style="width: 100%; justify-content: center; margin-top: 6px;">
+                Complete check-in & issue badge (3 clicks)
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Active Guests in Building Table -->
+        <div class="tile">
+          <div class="tile-header">
+            <div>
+              <h3>Active in the office</h3>
+              <p class="caption">Currently signed in guests</p>
+            </div>
+            <span class="chip chip-ok tabular" id="active-guests-count">1 active</span>
+          </div>
+
+          <div id="desk-guests-list">
+            <!-- Rendered via JS -->
           </div>
         </div>
       </div>
     </div>
 
-    <!-- VIEW 3: Approvals Inbox (L2 Gates) -->
-    <div id="view-approvals" class="section-card" style="display: none;">
-      <div class="section-header">
+    <!-- =====================================================================
+         VERB 4: APPROVE (Human-in-the-Loop Queue)
+         ===================================================================== -->
+    <div id="view-approve" style="display: none;">
+      <div class="greeting-header">
         <div>
-          <h2 class="section-title">Human-in-the-Loop Approvals Inbox (L2)</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-            Review AI extractions and approve before downstream accounting/CRM actions take effect
-          </p>
+          <h1>Approvals queue</h1>
+          <p class="subtext">L0 and L2 gates. One-click approvals with 6-second undo.</p>
         </div>
       </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Target Entity</th>
-              <th>Proposed Action</th>
-              <th>Extraction Details</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="approvals-rows">
-            <tr>
-              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                No pending approvals. AI is operating within confidence thresholds.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- VIEW 4: Renewals & Obligations -->
-    <div id="view-renewals" class="section-card" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">Compliance Obligations & Renewals Tracker</h2>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-            Automated reminder ladders for insurances, licences, and vehicle registrations
-          </p>
+      <div class="tile" style="max-width: 900px;">
+        <div class="tile-header">
+          <div>
+            <h2>Pending decisions</h2>
+            <p class="caption">All actions proposed by AI requiring human sign-off.</p>
+          </div>
         </div>
-        <button class="btn btn-secondary" onclick="triggerRenewalsCheck()">⚡ Run Expiry Sweep</button>
-      </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Asset / Entity</th>
-              <th>Type</th>
-              <th>Reference Number</th>
-              <th>Issuer</th>
-              <th>Expires On</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="renewals-rows">
-            <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                Loading obligations...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="full-approvals-list">
+          <!-- Rendered via JS -->
+        </div>
       </div>
     </div>
+
   </main>
 
-  <!-- Modal: Register Correspondence -->
-  <div id="modal-intake" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 style="font-size: 1.25rem; font-weight: 700;">New Correspondence Intake</h3>
-        <button class="close-btn" onclick="closeModal('modal-intake')">&times;</button>
+  <!-- =========================================================================
+       Floating 6-Second Undo Toast
+       ========================================================================= -->
+  <div class="toast-container" id="undo-toast-wrap">
+    <div class="undo-toast">
+      <span id="undo-toast-text">Approved item.</span>
+      <button class="btn-undo" onclick="performUndo()">Undo (6s)</button>
+      <div class="toast-progress-bar" id="undo-progress"></div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Command Palette Modal (Ctrl K)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-palette" onclick="handlePaletteBackdrop(event)">
+    <div class="modal-palette">
+      <div class="palette-search-box">
+        <span style="font-size: 20px;">🔍</span>
+        <input type="text" id="palette-input" placeholder="Search correspondence, rooms, guests, or jump to tabs..." oninput="handlePaletteInput()" onkeydown="handlePaletteKeydown(event)">
+        <span class="kbd-chip">ESC</span>
       </div>
-      <form onsubmit="handleCorrespondenceSubmit(event)">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label>Direction</label>
-          <select id="intake-direction">
-            <option value="IN">Inbound (Incoming)</option>
-            <option value="OUT">Outbound (Outgoing)</option>
-          </select>
+
+      <div class="palette-results" id="palette-results-list">
+        <div class="palette-group-title">Quick actions</div>
+        <div class="palette-item" onclick="triggerFastLog(); closePalette();">
+          <span>📥 Log a new letter or scan (Drop-to-read)</span>
+          <span class="caption">Mail</span>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label>Channel</label>
-          <select id="intake-channel">
-            <option value="EMAIL">Email</option>
-            <option value="SCAN">Physical Scan</option>
-            <option value="PHONE">Phone Call</option>
-            <option value="VISIT">In-Person Visit</option>
-            <option value="UPLOAD">Direct Upload</option>
-          </select>
+        <div class="palette-item" onclick="switchVerb('desk'); closePalette();">
+          <span>🛎️ Quick guest check-in</span>
+          <span class="caption">Desk</span>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label>Subject *</label>
-          <input type="text" id="intake-subject" required placeholder="e.g. Tax Clearance Certificate 2026">
+        <div class="palette-item" onclick="switchVerb('approve'); closePalette();">
+          <span>⚖️ Review pending approvals</span>
+          <span class="caption">Approve</span>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label>Sender / Recipient</label>
-          <input type="text" id="intake-sender" placeholder="e.g. Zakat, Tax and Customs Authority">
+        <div class="palette-item" onclick="toggleTheme(); closePalette();">
+          <span>🌙 Toggle light / dark mode</span>
+          <span class="caption">System</span>
         </div>
-        <div class="form-group" style="margin-bottom: 1.5rem;">
-          <label>Physical Filing Location</label>
-          <input type="text" id="intake-location" placeholder="e.g. Cabinet A, Shelf 3, Box 12">
+
+        <div class="palette-group-title" style="margin-top: 10px;">Recent records</div>
+        <div class="palette-item" onclick="switchVerb('mail'); closePalette();">
+          <span>📄 Municipality Tax Notice 2026</span>
+          <span class="chip chip-sage">Cabinet 2, Shelf B</span>
         </div>
-        <button type="submit" class="btn" style="width: 100%;">Create & Assign Reference Number</button>
+        <div class="palette-item" onclick="switchVerb('mail'); closePalette();">
+          <span>📄 Building Lease Agreement Amendment</span>
+          <span class="chip chip-mint">Safe Box 4</span>
+        </div>
+        <div class="palette-item" onclick="switchVerb('mail'); closePalette();">
+          <span>📄 Annual Commercial Registration Notice</span>
+          <span class="chip chip-sage">Cabinet 1, Shelf A</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Quick Room Booking Modal (8 → 2 clicks)
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-room-booking" onclick="handleRoomBackdrop(event)">
+    <div class="modal-palette" style="max-width: 480px; padding: 24px;">
+      <h3 id="room-book-title" style="margin-bottom: 4px;">Book room</h3>
+      <p class="caption" id="room-book-sub" style="margin-bottom: 16px;">Tap to confirm booking</p>
+
+      <form onsubmit="confirmRoomBooking(event)">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <label class="caption" style="display: block; margin-bottom: 4px;">Meeting title *</label>
+            <input type="text" id="rb-title" required placeholder="e.g. Budget sync, Client pitch" class="filter-input" style="width: 100%;">
+          </div>
+          <div>
+            <label class="caption" style="display: block; margin-bottom: 4px;">Organizer / Host</label>
+            <input type="text" id="rb-host" placeholder="Your name or team" class="filter-input" style="width: 100%;">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button type="submit" class="btn-clay" style="flex: 1; justify-content: center;">
+              Confirm booking (2 clicks)
+            </button>
+            <button type="button" class="btn-subtle" onclick="closeRoomModal()">Cancel</button>
+          </div>
+        </div>
       </form>
     </div>
   </div>
 
+  <!-- =========================================================================
+       Application Logic & Client State
+       ========================================================================= -->
   <script>
-    // Tab Navigation
-    function switchView(viewName) {
-      document.querySelectorAll('.section-card').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    // State Store
+    const state = {
+      theme: 'light',
+      activeVerb: 'today',
+      approvals: [],
+      correspondence: [],
+      rooms: [],
+      obligations: [],
+      activeVisitors: [],
+      undoItem: null,
+      undoTimer: null
+    };
+
+    // Initialize Greeting based on local time
+    function updateGreeting() {
+      const hour = new Date().getHours();
+      let phrase = 'Good evening, Office';
+      if (hour >= 5 && hour < 12) phrase = 'Good morning, Office';
+      else if (hour >= 12 && hour < 17) phrase = 'Good afternoon, Office';
       
-      const targetView = document.getElementById(`view-${viewName}`);
-      if (targetView) targetView.style.display = 'block';
-
-      // Highlight active button
-      const activeBtn = Array.from(document.querySelectorAll('.nav-tab')).find(b => b.getAttribute('onclick')?.includes(viewName));
-      if (activeBtn) activeBtn.classList.add('active');
-
-      if (viewName === 'register') loadRegister();
-      if (viewName === 'kiosk') loadActiveVisitors();
-      if (viewName === 'approvals') loadApprovals();
-      if (viewName === 'renewals') loadRenewals();
+      const titleEl = document.getElementById('greeting-title');
+      if (titleEl) titleEl.innerText = phrase;
     }
 
-    function openModal(id) {
-      document.getElementById(id).style.display = 'flex';
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    // Live Health Check
-    async function checkHealth() {
-      try {
-        const res = await fetch('/api/health');
-        const json = await res.json();
-        if (json.success) {
-          document.getElementById('health-status').innerText = 'Operational • Edge Running';
+    // Four Verbs Navigation
+    function switchVerb(verb) {
+      state.activeVerb = verb;
+      ['today', 'mail', 'desk', 'approve'].forEach(v => {
+        const viewEl = document.getElementById(`view-${v}`);
+        const tabEl = document.getElementById(`tab-${v}`);
+        if (viewEl) viewEl.style.display = (v === verb) ? 'block' : 'none';
+        if (tabEl) {
+          if (v === verb) tabEl.classList.add('active');
+          else tabEl.classList.remove('active');
         }
-      } catch (e) {
-        document.getElementById('health-status').innerText = 'System Offline';
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Theme Management
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('office_os_theme', next);
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.innerText = next === 'dark' ? '☀️' : '🌙';
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('office_os_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.innerText = saved === 'dark' ? '☀️' : '🌙';
+    }
+
+    // =========================================================================
+    // API Data Fetchers
+    // =========================================================================
+
+    async function loadAllData() {
+      await Promise.all([
+        fetchApprovals(),
+        fetchCorrespondence(),
+        fetchRooms(),
+        fetchObligations(),
+        fetchActiveVisitors()
+      ]);
+    }
+
+    // Approvals API
+    async function fetchApprovals() {
+      try {
+        const res = await fetch('/api/approvals');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          state.approvals = json.data;
+          renderApprovals();
+        }
+      } catch (err) {
+        console.error('Failed to load approvals:', err);
       }
     }
 
-    // Load Correspondence Register
-    async function loadRegister() {
+    function renderApprovals() {
+      const count = state.approvals.length;
+      
+      // Update counters in headers and pills
+      const statEl = document.getElementById('calls-stat');
+      if (statEl) statEl.innerText = `${count} ${count === 1 ? 'thing' : 'things'}`;
+
+      const badgeNav = document.getElementById('badge-calls-count');
+      if (badgeNav) badgeNav.innerText = count;
+
+      const badgeItems = document.getElementById('badge-call-items');
+      if (badgeItems) badgeItems.innerText = count;
+
+      const todayList = document.getElementById('calls-list');
+      const approveList = document.getElementById('full-approvals-list');
+
+      if (count === 0) {
+        const emptyHtml = `
+          <div class="empty-state">
+            <div style="font-size: 32px; margin-bottom: 8px;">✨</div>
+            <h3>Everything ran itself</h3>
+            <p class="caption">No items need your sign-off. AI is operating safely within confidence parameters.</p>
+          </div>
+        `;
+        if (todayList) todayList.innerHTML = emptyHtml;
+        if (approveList) approveList.innerHTML = emptyHtml;
+        return;
+      }
+
+      // Render cards
+      const html = state.approvals.map(item => {
+        const p = item.proposedPayload || {};
+        const title = p.subject || p.vendorName || item.proposedAction;
+        const fromInfo = p.from || (p.vendorName ? `Invoice ${p.invoiceNo}` : 'System Agent');
+        const shelf = p.shelf ? `<span class="chip chip-sage">${p.shelf}</span>` : '';
+        const summary = p.draftedReply || p.notes || `Proposed action: ${item.proposedAction}`;
+        const refBadge = p.refNo ? `<span class="chip chip-mint tabular">${p.refNo}</span>` : '';
+        const amountBadge = p.totalAmount ? `<span class="chip chip-info tabular">${p.currency || 'SAR'} ${p.totalAmount}</span>` : '';
+
+        return `
+          <div class="call-card" id="card-${item.id}">
+            <div class="call-card-top">
+              <div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap;">
+                  ${refBadge}
+                  ${amountBadge}
+                  ${shelf}
+                </div>
+                <div class="call-title">${title}</div>
+                <div class="call-meta">From: <strong>${fromInfo}</strong></div>
+              </div>
+            </div>
+
+            <div class="call-reason">${summary}</div>
+
+            <div class="call-actions">
+              <button class="btn-clay" onclick="optimisticApprove('${item.id}')">
+                Approve (1 click)
+              </button>
+              <button class="btn-subtle" onclick="rejectApproval('${item.id}')">
+                Reject
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (todayList) todayList.innerHTML = html;
+      if (approveList) approveList.innerHTML = html;
+    }
+
+    // Optimistic UI: Approve with 6-second Undo Toast (6 → 1 click)
+    function optimisticApprove(id) {
+      const idx = state.approvals.findIndex(a => a.id === id);
+      if (idx === -1) return;
+
+      const item = state.approvals[idx];
+      const cardEl = document.getElementById(`card-${id}`);
+      if (cardEl) {
+        cardEl.classList.add('dismissing');
+      }
+
+      // Temporarily remove from state optimistically
+      state.undoItem = { item, index: idx };
+      state.approvals.splice(idx, 1);
+      
+      // Update badge counts immediately
+      setTimeout(() => {
+        renderApprovals();
+      }, 350);
+
+      // Trigger Floating Undo Toast with 6-second timer
+      showUndoToast(`Approved ${item.proposedPayload?.subject || item.proposedAction}.`, id);
+    }
+
+    function showUndoToast(message, id) {
+      if (state.undoTimer) clearTimeout(state.undoTimer);
+
+      const toast = document.getElementById('undo-toast-wrap');
+      const textEl = document.getElementById('undo-toast-text');
+      const progress = document.getElementById('undo-progress');
+
+      if (textEl) textEl.innerText = message;
+      if (progress) {
+        progress.style.transition = 'none';
+        progress.style.width = '100%';
+        setTimeout(() => {
+          progress.style.transition = 'width 6000ms linear';
+          progress.style.width = '0%';
+        }, 20);
+      }
+
+      if (toast) toast.classList.add('active');
+
+      // Schedule backend commit after 6 seconds if not undone
+      state.undoTimer = setTimeout(async () => {
+        hideUndoToast();
+        state.undoItem = null;
+        try {
+          await fetch(`/api/approvals/${id}/decide`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              decision: 'APPROVED',
+              decidedByEmail: 'director@company.com',
+              notes: 'Approved via 1-click optimistic flow.'
+            })
+          });
+        } catch (err) {
+          console.error('Failed to commit approval decision:', err);
+        }
+      }, 6000);
+    }
+
+    function hideUndoToast() {
+      const toast = document.getElementById('undo-toast-wrap');
+      if (toast) toast.classList.remove('active');
+    }
+
+    function performUndo() {
+      if (!state.undoItem) return;
+      if (state.undoTimer) clearTimeout(state.undoTimer);
+
+      // Re-insert item back
+      state.approvals.splice(state.undoItem.index, 0, state.undoItem.item);
+      state.undoItem = null;
+      hideUndoToast();
+      renderApprovals();
+    }
+
+    async function rejectApproval(id) {
+      if (!confirm('Reject this proposed action?')) return;
+      try {
+        await fetch(`/api/approvals/${id}/decide`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            decision: 'REJECTED',
+            decidedByEmail: 'director@company.com',
+            notes: 'Rejected by operator.'
+          })
+        });
+        await fetchApprovals();
+      } catch (err) {
+        alert('Error rejecting item.');
+      }
+    }
+
+    // Correspondence API (Mail)
+    async function fetchCorrespondence() {
       try {
         const res = await fetch('/api/correspondence');
         const json = await res.json();
-        const tbody = document.getElementById('register-rows');
-        
-        if (!json.success || !json.data || json.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No correspondence registered yet. Click 'Register Inbound Item' to start.</td></tr>`;
-          return;
+        if (json.success && Array.isArray(json.data)) {
+          state.correspondence = json.data;
+          renderCorrespondence(state.correspondence);
         }
-
-        tbody.innerHTML = json.data.map(item => `
-          <tr>
-            <td><span class="mono-badge">${item.refNo}</span></td>
-            <td>${item.channel}</td>
-            <td><strong>${item.direction}</strong></td>
-            <td>${item.subject}</td>
-            <td>${item.sourceSender || item.recipient || '—'}</td>
-            <td>${item.physicalLocation || '—'}</td>
-            <td><span class="status-pill status-${item.status.toLowerCase()}">${item.status}</span></td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error loading register:', e);
+      } catch (err) {
+        console.error('Failed to load correspondence:', err);
       }
     }
 
-    // Submit Correspondence Intake
-    async function handleCorrespondenceSubmit(e) {
-      e.preventDefault();
-      const payload = {
-        direction: document.getElementById('intake-direction').value,
-        channel: document.getElementById('intake-channel').value,
-        subject: document.getElementById('intake-subject').value,
-        sourceSender: document.getElementById('intake-sender').value || undefined,
-        physicalLocation: document.getElementById('intake-location').value || undefined,
-      };
+    function renderCorrespondence(items) {
+      const tbody = document.getElementById('mail-table-rows');
+      if (!tbody) return;
 
+      if (items.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <h3>No letters or documents registered</h3>
+                <p class="caption">Drop a file or simulated document above to file your first correspondence.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = items.map(c => `
+        <tr>
+          <td><span class="chip chip-mint tabular">${c.refNo}</span></td>
+          <td>
+            <strong>${c.subject}</strong>
+            <div class="caption">${c.direction === 'IN' ? 'Inbound' : 'Outbound'} · ${c.channel}</div>
+          </td>
+          <td>${c.sourceSender || c.recipient || '—'}</td>
+          <td>
+            <span class="chip chip-sage">${c.physicalLocation || 'Cabinet 2, Shelf B suggested'}</span>
+          </td>
+          <td>
+            <span class="chip ${c.status === 'RECEIVED' ? 'chip-ok' : 'chip-info'}">${c.status}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterRegister() {
+      const q = (document.getElementById('mail-search')?.value || '').toLowerCase().trim();
+      if (!q) {
+        renderCorrespondence(state.correspondence);
+        return;
+      }
+      const filtered = state.correspondence.filter(c => 
+        (c.refNo || '').toLowerCase().includes(q) ||
+        (c.subject || '').toLowerCase().includes(q) ||
+        (c.sourceSender || '').toLowerCase().includes(q) ||
+        (c.physicalLocation || '').toLowerCase().includes(q)
+      );
+      renderCorrespondence(filtered);
+    }
+
+    // Drop-to-Read Intake Simulation (9 → 2 clicks)
+    function simulateDrop() {
+      const preview = document.getElementById('intake-preview-card');
+      if (preview) {
+        preview.style.display = 'block';
+        preview.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function cancelIntake() {
+      const preview = document.getElementById('intake-preview-card');
+      if (preview) preview.style.display = 'none';
+    }
+
+    async function confirmIntake() {
       try {
         const res = await fetch('/api/correspondence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            direction: 'IN',
+            channel: 'SCAN',
+            subject: 'Municipality Tax Notice 2026',
+            sourceSender: 'Greater Amman Municipality',
+            physicalLocation: 'Cabinet 2, Shelf B suggested',
+            classification: 'INTERNAL'
+          })
         });
         const json = await res.json();
         if (json.success) {
-          closeModal('modal-intake');
-          e.target.reset();
-          loadRegister();
-        } else {
-          alert('Error registering correspondence: ' + (json.error?.message || 'Unknown error'));
+          cancelIntake();
+          await fetchCorrespondence();
+          // Highlight first row with spring flash
+          const firstRow = document.querySelector('#mail-table-rows tr');
+          if (firstRow) firstRow.classList.add('row-flash');
         }
       } catch (err) {
-        alert('Network error registering item.');
+        alert('Error saving correspondence.');
       }
     }
 
-    // Visitor Check-In
-    async function handleVisitorCheckIn(e) {
+    function triggerFastLog() {
+      switchVerb('mail');
+      setTimeout(simulateDrop, 200);
+    }
+
+    // Rooms API (Tap free slot to book: 8 → 2 clicks)
+    async function fetchRooms() {
+      try {
+        const res = await fetch('/api/rooms');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          state.rooms = json.data;
+          renderRooms();
+        }
+      } catch (err) {
+        console.error('Failed to load rooms:', err);
+      }
+    }
+
+    let bookingTarget = { roomName: '', timeSlot: '' };
+
+    function renderRooms() {
+      const container = document.getElementById('rooms-container');
+      if (!container) return;
+
+      container.innerHTML = state.rooms.map(room => `
+        <div class="room-row">
+          <div class="room-name">${room.name}</div>
+          <div class="room-slots">
+            ${room.slots.map(slot => {
+              if (slot.status === 'BOOKED') {
+                return `
+                  <span class="slot-pill slot-booked" title="Host: ${slot.host || 'Team'}">
+                    ${slot.time} · ${slot.title || 'Booked'}
+                  </span>
+                `;
+              } else {
+                return `
+                  <span class="slot-pill slot-free" onclick="openRoomBookingModal('${room.name}', '${slot.time}')">
+                    ${slot.time} · Free
+                  </span>
+                `;
+              }
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openRoomBookingModal(roomName, timeSlot) {
+      bookingTarget = { roomName, timeSlot };
+      const modal = document.getElementById('modal-room-booking');
+      const titleEl = document.getElementById('room-book-title');
+      const subEl = document.getElementById('room-book-sub');
+
+      if (titleEl) titleEl.innerText = `Book ${roomName}`;
+      if (subEl) subEl.innerText = `Time slot: ${timeSlot} (2 clicks)`;
+
+      if (modal) modal.style.display = 'flex';
+      setTimeout(() => document.getElementById('rb-title')?.focus(), 50);
+    }
+
+    function closeRoomModal() {
+      const modal = document.getElementById('modal-room-booking');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handleRoomBackdrop(e) {
+      if (e.target.id === 'modal-room-booking') closeRoomModal();
+    }
+
+    async function confirmRoomBooking(e) {
+      e.preventDefault();
+      const title = document.getElementById('rb-title').value;
+      const host = document.getElementById('rb-host').value || 'Executive Team';
+
+      try {
+        const res = await fetch('/api/rooms/book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomName: bookingTarget.roomName,
+            timeSlot: bookingTarget.timeSlot,
+            title,
+            hostName: host
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeRoomModal();
+          e.target.reset();
+          await fetchRooms();
+        }
+      } catch (err) {
+        alert('Failed to book room.');
+      }
+    }
+
+    // Obligations API (Renewing Soon)
+    async function fetchObligations() {
+      try {
+        const res = await fetch('/api/obligations');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          state.obligations = json.data;
+          renderObligations();
+        }
+      } catch (err) {
+        console.error('Failed to load obligations:', err);
+      }
+    }
+
+    function renderObligations() {
+      const container = document.getElementById('renewals-container');
+      if (!container) return;
+
+      if (state.obligations.length === 0) {
+        container.innerHTML = `<p class="caption">No compliance items due soon.</p>`;
+        return;
+      }
+
+      container.innerHTML = state.obligations.map(ob => {
+        // Compute days difference
+        const now = new Date();
+        const expiry = new Date(ob.expiresOn);
+        const diffDays = Math.max(1, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
+        const isUrgent = diffDays <= 14;
+
+        return `
+          <div class="renewal-item">
+            <div class="renewal-days ${isUrgent ? 'chip-warn' : 'chip-info'}">
+              *${diffDays}d*
+            </div>
+            <div style="flex: 1;">
+              <strong>${ob.title}</strong>
+              <div class="caption">${ob.issuer}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function triggerSweep() {
+      try {
+        const res = await fetch('/api/obligations/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ daysThreshold: 45 })
+        });
+        const json = await res.json();
+        if (json.success) {
+          await fetchObligations();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Active Visitors & Desk
+    async function fetchActiveVisitors() {
+      try {
+        const res = await fetch('/api/kiosk/active');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          state.activeVisitors = json.data;
+          renderActiveVisitors();
+        }
+      } catch (err) {
+        console.error('Failed to load visitors:', err);
+      }
+    }
+
+    function renderActiveVisitors() {
+      const count = state.activeVisitors.length;
+      const countEl = document.getElementById('metric-visitors');
+      if (countEl) countEl.innerText = count;
+
+      const deskCount = document.getElementById('active-guests-count');
+      if (deskCount) deskCount.innerText = `${count} active`;
+
+      const quickStatus = document.getElementById('guest-quick-status');
+      if (quickStatus) {
+        if (count > 0) {
+          const first = state.activeVisitors[0];
+          quickStatus.innerHTML = `
+            ${first.fullName} (${first.company || 'Guest'})
+            <button class="btn-subtle" style="padding: 2px 8px; font-size: 11px; margin-left: 4px;" onclick="checkoutGuest('${first.id}')">Check out</button>
+          `;
+        } else {
+          quickStatus.innerHTML = `No guests in office`;
+        }
+      }
+
+      const listEl = document.getElementById('desk-guests-list');
+      if (listEl) {
+        if (count === 0) {
+          listEl.innerHTML = `
+            <div class="empty-state" style="padding: 24px 0;">
+              <h3>No active visitors</h3>
+              <p class="caption">Front desk is quiet. Use the form to sign a guest in.</p>
+            </div>
+          `;
+        } else {
+          listEl.innerHTML = state.activeVisitors.map(v => `
+            <div class="room-row" style="margin-bottom: 8px;">
+              <div>
+                <div style="font-weight: 600;">${v.fullName}</div>
+                <div class="caption">${v.company || 'Independent'} · Host: ${v.hostEmployeeEmail}</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="chip chip-mint tabular">${v.badgeNumber}</span>
+                <button class="btn-subtle" style="padding: 4px 10px; font-size: 12px;" onclick="checkoutGuest('${v.id}')">Check out</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+    }
+
+    async function checkoutGuest(visitorId) {
+      try {
+        await fetch('/api/kiosk/check-out', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId })
+        });
+        await fetchActiveVisitors();
+      } catch (err) {
+        alert('Error checking out visitor.');
+      }
+    }
+
+    function checkoutFirstGuest() {
+      if (state.activeVisitors.length > 0) {
+        checkoutGuest(state.activeVisitors[0].id);
+      }
+    }
+
+    // Fast 3-Click Visitor Form
+    async function submitQuickVisitor(e) {
       e.preventDefault();
       const payload = {
-        fullName: document.getElementById('vis-name').value,
-        company: document.getElementById('vis-company').value || undefined,
-        hostEmployeeEmail: document.getElementById('vis-host').value,
-        purpose: document.getElementById('vis-purpose').value,
-        ndaSigned: document.getElementById('vis-nda').checked
+        fullName: document.getElementById('guest-name').value,
+        company: document.getElementById('guest-company').value || undefined,
+        hostEmployeeEmail: document.getElementById('guest-host').value,
+        purpose: document.getElementById('guest-purpose').value,
+        ndaSigned: true
       };
 
       try {
@@ -778,133 +2015,67 @@
         });
         const json = await res.json();
         if (json.success) {
-          const vis = json.data;
-          document.getElementById('issued-badge').innerText = vis.badgeNumber;
-          document.getElementById('issued-name').innerText = vis.fullName;
-          document.getElementById('issued-host').innerText = `Host notified (${vis.hostEmployeeEmail})`;
           e.target.reset();
-          loadActiveVisitors();
-        } else {
-          alert('Error checking in: ' + (json.error?.message || 'Validation failed'));
+          await fetchActiveVisitors();
         }
       } catch (err) {
-        alert('Error connecting to front desk reception API.');
+        alert('Check-in failed.');
       }
     }
 
-    // Active Visitors
-    async function loadActiveVisitors() {
-      try {
-        const res = await fetch('/api/kiosk/active');
-        const json = await res.json();
-        if (json.success) {
-          document.getElementById('metric-visitors').innerText = json.data.length;
-        }
-      } catch (e) {
-        console.error(e);
+    // =========================================================================
+    // Command Palette (Ctrl K)
+    // =========================================================================
+    function openPalette() {
+      const modal = document.getElementById('modal-palette');
+      if (modal) modal.style.display = 'flex';
+      setTimeout(() => document.getElementById('palette-input')?.focus(), 50);
+    }
+
+    function closePalette() {
+      const modal = document.getElementById('modal-palette');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handlePaletteBackdrop(e) {
+      if (e.target.id === 'modal-palette') closePalette();
+    }
+
+    function handlePaletteInput() {
+      const q = (document.getElementById('palette-input')?.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('.palette-item');
+      items.forEach(el => {
+        const text = el.innerText.toLowerCase();
+        el.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+      });
+    }
+
+    function handlePaletteKeydown(e) {
+      if (e.key === 'Escape') closePalette();
+      if (e.key === 'Enter') {
+        const visible = Array.from(document.querySelectorAll('.palette-item')).filter(el => el.style.display !== 'none');
+        if (visible.length > 0) visible[0].click();
       }
     }
 
-    // Load Approvals Inbox
-    async function loadApprovals() {
-      try {
-        const res = await fetch('/api/approvals');
-        const json = await res.json();
-        const tbody = document.getElementById('approvals-rows');
-        
-        if (!json.success || !json.data || json.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No pending approvals in queue.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = json.data.map(app => `
-          <tr>
-            <td><strong>${app.targetEntityType}</strong></td>
-            <td>${app.proposedAction}</td>
-            <td><pre style="font-family: var(--font-mono); font-size: 0.75rem; color: #93c5fd;">${JSON.stringify(app.proposedPayload, null, 2)}</pre></td>
-            <td>
-              <div style="display: flex; gap: 0.5rem;">
-                <button class="btn btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="decideApproval('${app.id}', 'APPROVED')">Approve</button>
-                <button class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="decideApproval('${app.id}', 'REJECTED')">Reject</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error loading approvals:', e);
+    // Global Key Listener for Ctrl K / Cmd K
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openPalette();
       }
-    }
+    });
 
-    async function decideApproval(id, decision) {
-      try {
-        const res = await fetch(`/api/approvals/${id}/decide`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            decision,
-            decidedByEmail: 'approver@company.com',
-            notes: `Decided via Office OS web console.`
-          })
-        });
-        const json = await res.json();
-        if (json.success) {
-          loadApprovals();
-        }
-      } catch (e) {
-        alert('Failed to submit approval decision.');
-      }
-    }
-
-    // Load Renewals
-    async function loadRenewals() {
-      try {
-        const res = await fetch('/api/obligations');
-        const json = await res.json();
-        const tbody = document.getElementById('renewals-rows');
-
-        if (!json.success || !json.data || json.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No compliance obligations recorded yet.</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = json.data.map(item => `
-          <tr>
-            <td><strong>${item.title}</strong></td>
-            <td>${item.assetIdentifier}</td>
-            <td><span class="mono-badge">${item.kind}</span></td>
-            <td>${item.referenceNo}</td>
-            <td>${item.issuer}</td>
-            <td><strong>${item.expiresOn}</strong></td>
-            <td><span class="status-pill ${item.status === 'EXPIRING_SOON' ? 'status-pending' : 'status-approved'}">${item.status}</span></td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error loading obligations:', e);
-      }
-    }
-
-    async function triggerRenewalsCheck() {
-      try {
-        const res = await fetch('/api/obligations/check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ daysThreshold: 30 })
-        });
-        const json = await res.json();
-        if (json.success) {
-          alert(`Expiry sweep complete: ${json.data.expiringCount} obligations flagged for upcoming renewal.`);
-          loadRenewals();
-        }
-      } catch (e) {
-        alert('Error triggering renewals sweep.');
-      }
-    }
-
-    // Initialize on load
+    // Boot
     window.addEventListener('DOMContentLoaded', () => {
-      checkHealth();
-      loadRegister();
-      loadActiveVisitors();
+      initTheme();
+      updateGreeting();
+      loadAllData();
+      if (window.location.pathname === '/kiosk') {
+        switchVerb('desk');
+      }
+      // Auto refresh every 15s
+      setInterval(loadAllData, 15000);
     });
   </script>
 </body>
