@@ -63,6 +63,12 @@
       --font-heading: 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-body: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
 
+      /* Harmonic Radii Scale (Law of Concentric Radii) */
+      --radius-tile: 22px;
+      --radius-card: 14px;
+      --radius-input: 10px;
+      --radius-pill: 9999px;
+
       /* Motion */
       --spring: cubic-bezier(.34, 1.56, .64, 1);
     }
@@ -111,6 +117,11 @@
       margin: 0;
       padding: 0;
       -webkit-font-smoothing: antialiased;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--teal) !important;
+      outline-offset: 2px !important;
     }
 
     body {
@@ -700,14 +711,14 @@
       margin-bottom: 6px;
     }
 
-    /* Tiles System (Glass + 28px Radius + 22px Padding) */
+    /* Tiles System (Glass + Harmonic 22px Radius + 20px Padding) */
     .tile {
       background: var(--surface-tile);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border: 1px solid var(--glass-edge);
-      border-radius: 28px;
-      padding: 22px;
+      border-radius: var(--radius-tile);
+      padding: 20px;
       box-shadow: 0 4px 20px -4px rgba(16, 48, 43, 0.04);
       position: relative;
     }
@@ -719,11 +730,11 @@
       margin-bottom: 16px;
     }
 
-    /* Grid Layouts (8px grid, 16px tile gap) */
+    /* Grid Layouts (8px grid, 18px tile gap, 1.4fr 1fr balance) */
     .today-grid {
       display: grid;
-      grid-template-columns: 1.6fr 1fr;
-      gap: 16px;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
     }
 
     @media (max-width: 980px) {
@@ -740,26 +751,26 @@
 
     .metrics-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
     }
 
-    /* Metric Cards */
+    /* Metric Cards - Refined 42px scale for layout stability */
     .metric-big {
       font-family: var(--font-heading);
-      font-size: 56px;
-      line-height: 60px;
+      font-size: 42px;
+      line-height: 46px;
       font-weight: 700;
       color: var(--ink);
-      letter-spacing: -0.03em;
-      margin: 8px 0 4px 0;
+      letter-spacing: -0.025em;
+      margin: 6px 0 2px 0;
     }
 
-    /* Needs Your Call Cards (20px Radius) */
+    /* Action Cards (Concentric 14px Radius) */
     .call-card {
       background: var(--surface-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 20px;
+      border-radius: var(--radius-card);
       padding: 18px 20px;
       margin-bottom: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
@@ -884,7 +895,7 @@
       align-items: center;
       background: var(--surface-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
+      border-radius: var(--radius-card);
       padding: 12px 16px;
       transition: all 350ms var(--spring);
     }
@@ -909,8 +920,8 @@
 
     .slot-pill {
       font-size: 13.5px;
-      padding: 5px 12px;
-      border-radius: 9999px;
+      padding: 6px 13px;
+      border-radius: var(--radius-pill);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -947,7 +958,7 @@
       gap: 14px;
       background: var(--surface-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
+      border-radius: var(--radius-card);
       padding: 12px 16px;
       margin-bottom: 10px;
     }
@@ -961,7 +972,7 @@
       font-size: 18px;
       font-weight: 700;
       padding: 6px 12px;
-      border-radius: 12px;
+      border-radius: var(--radius-input);
       font-variant-numeric: tabular-nums;
     }
 
@@ -1018,7 +1029,7 @@
       display: none;
       background: var(--surface-card);
       border: 1px solid var(--teal);
-      border-radius: 20px;
+      border-radius: var(--radius-card);
       padding: 18px 20px;
       margin-top: 16px;
       animation: popIn 350ms var(--spring);
@@ -1052,8 +1063,8 @@
     .filter-input {
       background: var(--surface-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 8px 16px;
+      border-radius: var(--radius-input);
+      padding: 9px 16px;
       font-family: var(--font-body);
       font-size: 14px;
       color: var(--ink);
@@ -1166,7 +1177,7 @@
       transform: scale(1.05);
     }
 
-    /* Ctrl K Command Palette Modal (30px Radius) */
+    /* Ctrl K Command Palette Modal */
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -1182,7 +1193,7 @@
     .modal-palette {
       background: var(--surface-card);
       border: 1px solid var(--glass-edge);
-      border-radius: 30px;
+      border-radius: var(--radius-tile);
       width: 90%;
       max-width: 600px;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
@@ -1226,7 +1237,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 14px;
-      border-radius: 14px;
+      border-radius: var(--radius-card);
       cursor: pointer;
       transition: all 150ms ease;
     }
@@ -1270,6 +1281,88 @@
     .row-flash {
       animation: rowFlash 2s ease-out;
     }
+
+    /* ==========================================================================
+       Responsive Navigation & Mobile Ergonomics (Linear/Superhuman Spec)
+       ========================================================================== */
+    @media (max-width: 900px) {
+      .search-pill span:not(.icon),
+      .search-pill .kbd-chip,
+      #density-btn,
+      #shortcuts-btn,
+      #telemetry-btn {
+        display: none !important;
+      }
+      .search-pill {
+        padding: 8px 10px;
+        border-radius: var(--radius-pill);
+      }
+      .brand-title {
+        display: none;
+      }
+      nav.top-bar {
+        padding: 10px 16px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      main.workspace {
+        padding: 16px 14px 120px 14px;
+        gap: 16px;
+      }
+      .greeting-header h1 {
+        font-size: 28px;
+        line-height: 32px;
+      }
+      .tile {
+        padding: 16px 14px;
+        border-radius: 18px;
+      }
+      .metric-big {
+        font-size: 34px;
+        line-height: 38px;
+      }
+      .bottom-dock {
+        padding: 4px 6px;
+        gap: 2px;
+      }
+      .dock-tab {
+        padding: 7px 12px;
+        font-size: 13px;
+        gap: 5px;
+      }
+      .call-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+      }
+      .call-actions button {
+        width: 100%;
+        justify-content: center;
+      }
+      .batch-dock-wrap {
+        bottom: calc(max(20px, env(safe-area-inset-bottom, 20px)) + 68px);
+        width: 92%;
+      }
+      .batch-dock {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    /* WCAG 2.5.5 Touch Target Compliance (44px min for coarse pointer) */
+    @media (pointer: coarse) {
+      .btn-clay,
+      .btn-subtle,
+      .icon-btn,
+      .dock-tab,
+      .slot-pill {
+        min-height: 44px;
+      }
+      .copyable-chip {
+        padding: 6px 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1300,7 +1393,7 @@
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </span>
-        <span>Log something</span>
+        <span>New intake</span>
       </button>
 
       <button class="btn-subtle" id="lang-btn" onclick="toggleLanguage()" title="Switch language (EN / العربية)" style="padding: 6px 12px; gap: 6px;">
@@ -1414,7 +1507,7 @@
         <div>
           <h1 id="greeting-title">Good evening, Office</h1>
           <p class="subtext">
-            <strong id="calls-stat" class="tabular">3 things</strong> need your call. Everything else ran itself.
+            <strong id="calls-stat" class="tabular">3 items</strong> require your review today. All routine workflows ran autonomously.
           </p>
         </div>
       </div>
@@ -1422,14 +1515,14 @@
       <!-- Today Grid -->
       <div class="today-grid">
         
-        <!-- Left: Needs Your Call Queue -->
+        <!-- Left: Action Required Queue -->
         <div class="tile">
           <div class="tile-header">
             <div>
-              <h2>Needs your call</h2>
-              <p class="caption">AI read, filed and drafted these. You approve what leaves the office.</p>
+              <h2>Action required</h2>
+              <p class="caption">Review and authorize pending disbursements, outgoing mail, and inventory orders.</p>
             </div>
-            <span class="chip chip-warn"><span id="badge-call-items" class="tabular">3</span> pending</span>
+            <span class="chip chip-warn"><span id="badge-call-items" class="tabular">3</span> pending review</span>
           </div>
 
           <div id="calls-list">
@@ -1465,8 +1558,8 @@
           <div class="tile">
             <div class="tile-header" style="margin-bottom: 8px;">
               <div>
-                <h3>Rooms today</h3>
-                <p class="caption">Tap a free slot to book.</p>
+                <h3>Conference rooms</h3>
+                <p class="caption">Select any vacant slot to reserve immediately.</p>
               </div>
             </div>
 
@@ -1479,10 +1572,10 @@
           <div class="tile">
             <div class="tile-header" style="margin-bottom: 10px;">
               <div>
-                <h3>Renewing soon</h3>
-                <p class="caption">Proactive obligations & compliance tracking</p>
+                <h3>Upcoming renewals</h3>
+                <p class="caption">Proactive tracking of corporate licenses, insurances, and registrations</p>
               </div>
-              <button class="btn-subtle" onclick="triggerSweep()">Run sweep</button>
+              <button class="btn-subtle" onclick="triggerSweep()" title="Scan for policies and agreements expiring within 45 days">Check renewals</button>
             </div>
 
             <div id="renewals-container">
@@ -1494,8 +1587,8 @@
           <div class="tile">
             <div class="tile-header" style="margin-bottom: 6px;">
               <div>
-                <h3>AI budget today</h3>
-                <p class="caption">Free tier allowance · resets 00:00 UTC</p>
+                <h3>Daily AI quota</h3>
+                <p class="caption">Free tier allowance · resets automatically at midnight</p>
               </div>
               <span class="chip chip-info tabular" id="budget-percent">—%</span>
             </div>
@@ -1519,8 +1612,8 @@
     <div id="view-mail" style="display: none;">
       <div class="greeting-header">
         <div>
-          <h1>Correspondence</h1>
-          <p class="subtext">Central Correspondence Register — Every letter and email, numbered and shelved automatically.</p>
+          <h1>Inbound &amp; Outbound Correspondence</h1>
+          <p class="subtext">Central Correspondence Register — Every official document, sequence-numbered and physically located.</p>
         </div>
       </div>
 
@@ -1533,8 +1626,8 @@
             <line x1="12" y1="3" x2="12" y2="15"></line>
           </svg>
         </div>
-        <div class="dropzone-title">Drop a file here</div>
-        <p class="subtext">Drop a letter, forward an email or take a photo. AI fills in the rest.</p>
+        <div class="dropzone-title">Drop or scan a document</div>
+        <p class="subtext">Drop a scanned letter, drag a PDF, or forward an email. AI extracts fields and suggests filing shelf.</p>
         <div style="margin-top: 12px; display: flex; justify-content: center; gap: 8px;">
           <span class="chip chip-mint">
             <span class="icon">
@@ -1542,7 +1635,7 @@
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
             </span>
-            Click to simulate Municipality Tax Notice scan
+            Simulate document scan
           </span>
         </div>
       </div>
@@ -1559,7 +1652,7 @@
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 16px;">
-          <button class="btn-clay" onclick="confirmIntake()">File to register (Assign Ref)</button>
+          <button class="btn-clay" onclick="confirmIntake()">Register document</button>
           <button class="btn-subtle" onclick="cancelIntake()">Cancel</button>
         </div>
       </div>
@@ -1568,8 +1661,8 @@
       <div class="tile table-tile">
         <div class="table-tile-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3>Central register</h3>
-            <p class="caption">Cryptographically chained intake audit log</p>
+            <h3>Central registry</h3>
+            <p class="caption">Verified registry with gapless sequencing and tamper-evident audit history</p>
           </div>
           <button class="btn-subtle" onclick="exportCorrespondenceCSV()" title="Export correspondence register to CSV" style="padding: 6px 12px; gap: 6px;">
             <span class="icon">
@@ -1621,10 +1714,10 @@
       <div class="greeting-header">
         <div>
           <h1>Front Desk & Visitor Reception</h1>
-          <p class="subtext">3-click visitor check-in, active office badges, and meeting rooms.</p>
+          <p class="subtext">Guest sign-in, active visitor badges, and room reservations.</p>
         </div>
         <a href="/kiosk" target="_blank" class="btn-clay btn-secondary-clay">
-          <span>Open guest kiosk mode</span>
+          <span>Open guest kiosk</span>
           <span class="icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -1640,8 +1733,8 @@
         <div class="tile">
           <div class="tile-header">
             <div>
-              <h2>Quick guest check-in</h2>
-              <p class="caption">Log a walk-in visitor in 3 clicks with automated host notification.</p>
+              <h2>Quick guest sign-in</h2>
+              <p class="caption">Log a visitor with automated host alert on Google Chat.</p>
             </div>
           </div>
 
@@ -1649,10 +1742,10 @@
           <div class="kiosk-reset-card" id="kiosk-success-banner">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div>
-                <h3 id="kiosk-success-title">Guest checked in successfully!</h3>
+                <h3 id="kiosk-success-title">Guest signed in successfully!</h3>
                 <p class="caption" id="kiosk-success-msg" style="color: var(--sem-ok-text);">Host has been alerted on Google Chat.</p>
               </div>
-              <button class="btn-subtle" onclick="resetKioskScreen()" style="padding: 4px 10px; font-size: 12px;">Reset screen now</button>
+              <button class="btn-subtle" onclick="resetKioskScreen()" style="padding: 4px 10px; font-size: 12px;">Reset screen</button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
               <span class="caption" style="font-size: 12px;">Auto-clearing screen for next guest in <strong id="kiosk-reset-countdown" class="tabular">30s</strong></span>
@@ -1684,7 +1777,7 @@
               </div>
 
               <button type="submit" class="btn-clay" style="width: 100%; justify-content: center; margin-top: 6px;">
-                Complete check-in & issue badge (3 clicks)
+                Check in guest &amp; issue badge
               </button>
             </div>
           </form>
@@ -1740,7 +1833,7 @@
       <div class="greeting-header">
         <div>
           <h1>Approvals queue</h1>
-          <p class="subtext">L0 and L2 gates. One-click approvals with 6-second undo.</p>
+          <p class="subtext">Human-in-the-loop governance. Sensitive disbursements, contracts, and reorders require operator sign-off.</p>
         </div>
       </div>
 
@@ -1748,7 +1841,7 @@
         <div class="tile-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h2>Pending decisions</h2>
-            <p class="caption">All actions proposed by AI requiring human sign-off.</p>
+            <p class="caption">Proposed actions and requisitions requiring operator sign-off.</p>
           </div>
           <button class="btn-subtle" onclick="openAuditModal()" style="padding: 6px 12px; font-size: 13px; gap: 6px;">
             <span class="icon">
@@ -1757,7 +1850,7 @@
                 <polyline points="9 12 11 14 15 10"></polyline>
               </svg>
             </span>
-            <span>Audit trail (SHA-256)</span>
+            <span>Security &amp; audit ledger</span>
           </button>
         </div>
 
@@ -1813,7 +1906,7 @@
                 <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
             </span>
-            <span>Log a new letter or scan (Drop-to-read)</span>
+            <span>Register document (Drop-to-read)</span>
           </div>
           <span class="caption">Mail</span>
         </div>
@@ -1826,7 +1919,7 @@
                 <path d="M19 21V11l-6-3"></path>
               </svg>
             </span>
-            <span>Quick guest check-in</span>
+            <span>Quick guest sign-in</span>
           </div>
           <span class="caption">Desk</span>
         </div>
@@ -1863,7 +1956,7 @@
                 <polyline points="9 12 11 14 15 10"></polyline>
               </svg>
             </span>
-            <span>View Immutable Audit Log (SHA-256)</span>
+            <span>View Security &amp; Audit Ledger</span>
           </div>
           <span class="caption">Audit</span>
         </div>
@@ -2117,8 +2210,8 @@
        ========================================================================= -->
   <div class="modal-backdrop" id="modal-room-booking" onclick="handleRoomBackdrop(event)">
     <div class="modal-palette" style="max-width: 480px; padding: 24px;">
-      <h3 id="room-book-title" style="margin-bottom: 4px;">Book room</h3>
-      <p class="caption" id="room-book-sub" style="margin-bottom: 16px;">Tap to confirm booking</p>
+      <h3 id="room-book-title" style="margin-bottom: 4px;">Book conference room</h3>
+      <p class="caption" id="room-book-sub" style="margin-bottom: 16px;">Confirm reservation details</p>
 
       <form onsubmit="confirmRoomBooking(event)">
         <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -2132,7 +2225,7 @@
           </div>
           <div style="display: flex; gap: 10px; margin-top: 8px;">
             <button type="submit" class="btn-clay" style="flex: 1; justify-content: center;">
-              Confirm booking (2 clicks)
+              Confirm reservation
             </button>
             <button type="button" class="btn-subtle" onclick="closeRoomModal()">Cancel</button>
           </div>
@@ -2350,7 +2443,7 @@
       
       // Update counters in headers and pills
       const statEl = document.getElementById('calls-stat');
-      if (statEl) statEl.innerText = `${count} ${count === 1 ? 'thing' : 'things'}`;
+      if (statEl) statEl.innerText = `${count} ${count === 1 ? 'item' : 'items'}`;
 
       const badgeNav = document.getElementById('badge-calls-count');
       if (badgeNav) badgeNav.innerText = count;
@@ -2423,7 +2516,7 @@
 
             <div class="call-actions">
               <button class="btn-clay" onclick="optimisticApprove('${item.id}')">
-                Approve (1 click)
+                Approve action
               </button>
               <button class="btn-subtle" onclick="rejectApproval('${item.id}')">
                 Reject
@@ -2845,7 +2938,7 @@
       const subEl = document.getElementById('room-book-sub');
 
       if (titleEl) titleEl.innerText = `Book ${roomName}`;
-      if (subEl) subEl.innerText = `Time slot: ${timeSlot} (2 clicks)`;
+      if (subEl) subEl.innerText = `Time slot: ${timeSlot}`;
 
       if (modal) modal.style.display = 'flex';
       setTimeout(() => document.getElementById('rb-title')?.focus(), 50);
@@ -2875,7 +2968,7 @@
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerText = 'Booking room...';
+        submitBtn.innerText = 'Reserving room...';
       }
 
       try {
@@ -2904,7 +2997,7 @@
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerText = 'Confirm booking (2 clicks)';
+          submitBtn.innerText = 'Confirm reservation';
         }
       }
     }
@@ -2942,7 +3035,7 @@
         return `
           <div class="renewal-item">
             <div class="renewal-days ${isUrgent ? 'chip-warn' : 'chip-info'}">
-              *${diffDays}d*
+              ${diffDays}d
             </div>
             <div style="flex: 1;">
               <strong>${escapeHtml(ob.title)}</strong>
@@ -2963,6 +3056,7 @@
         const json = await res.json();
         if (json.success) {
           await fetchObligations();
+          showToast('Checked renewals for the next 45 days.');
         }
       } catch (err) {
         console.error(err);
@@ -3102,7 +3196,7 @@
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerText = 'Sign in (3 clicks)';
+          submitBtn.innerText = 'Check in guest & issue badge';
         }
       }
     }
@@ -3280,10 +3374,10 @@
         desk: 'Desk',
         approve: 'Approve',
         search: 'Search anything...',
-        logSomething: 'Log something',
+        logSomething: 'New intake',
         langLabel: 'عربي',
         exportCsv: 'Export CSV',
-        auditTrail: 'Audit trail (SHA-256)',
+        auditTrail: 'Security & audit ledger',
         quickActions: 'Quick actions'
       },
       ar: {
@@ -3295,7 +3389,7 @@
         logSomething: 'تسجيل وارد جديد',
         langLabel: 'English',
         exportCsv: 'تصدير CSV',
-        auditTrail: 'سجل التدقيق (SHA-256)',
+        auditTrail: 'سجل الأمان والتدقيق',
         quickActions: 'إجراءات سريعة'
       }
     };
@@ -3327,6 +3421,9 @@
 
       const searchInput = document.getElementById('palette-input');
       if (searchInput) searchInput.placeholder = t.search;
+
+      const logBtn = document.querySelector('button[onclick="triggerFastLog()"] span:last-child');
+      if (logBtn) logBtn.innerText = t.logSomething;
     }
 
     function initLanguage() {
