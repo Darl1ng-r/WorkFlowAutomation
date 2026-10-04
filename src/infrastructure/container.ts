@@ -114,7 +114,8 @@ export function createContainerFromEnv(env: {
     approvalRepo,
     invoiceRepo,
     correspondenceRepo,
-    auditRepo
+    auditRepo,
+    supplyRepo
   );
 
   const crmPort = new InMemoryCrmAdapter();
