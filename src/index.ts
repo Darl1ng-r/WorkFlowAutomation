@@ -48,4 +48,39 @@ export default {
       })()
     );
   },
+
+  /**
+   * Cloudflare Email Routing Event Handler
+   * - Ingests inbound corporate emails, passes them through the AI orchestrator,
+   *   and routes them to Google Calendar, Approvals, or the Central Register.
+   */
+  async email(message: any, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const from = message.from || "unknown-sender@external.com";
+          const subject = message.headers?.get("subject") || "Inbound Communication";
+          
+          // Read email body stream
+          let bodyText = subject;
+          if (message.raw) {
+            const rawBuffer = await new Response(message.raw).text();
+            bodyText = rawBuffer.slice(0, 4000);
+          }
+
+          console.log(`[Email Routing] Ingested email from ${from} with subject "${subject}"`);
+          const container = createContainerFromEnv(env);
+          const result = await container.orchestrateInboundEmail.execute({
+            sender: from,
+            subject,
+            body: bodyText,
+            receivedAt: new Date().toISOString(),
+          });
+          console.log(`[Email Routing] AI action executed: ${result.actionExecuted} - ${result.actionSummary}`);
+        } catch (err) {
+          console.error("[Email Routing] Failed to orchestrate inbound email:", err);
+        }
+      })()
+    );
+  },
 };

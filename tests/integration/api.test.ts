@@ -19,6 +19,8 @@ import { ProcessInvoiceUseCase } from "@application/use-cases/process-invoice.us
 import { DecideApprovalUseCase } from "@application/use-cases/decide-approval.use-case";
 import { VisitorCheckInUseCase } from "@application/use-cases/visitor-check-in.use-case";
 import { CheckExpiringObligationsUseCase } from "@application/use-cases/check-expiring-obligations.use-case";
+import { OrchestrateInboundEmailUseCase } from "@application/use-cases/orchestrate-inbound-email.use-case";
+import { OfficeAIOrchestrator } from "@infrastructure/ai/office-ai-orchestrator";
 
 describe("API End-to-End Integration Tests", () => {
   let app: ReturnType<typeof createApp>;
@@ -60,6 +62,17 @@ describe("API End-to-End Integration Tests", () => {
     const visitorCheckIn = new VisitorCheckInUseCase(visitorRepo, auditRepo, notificationPort);
     const checkExpiringObligations = new CheckExpiringObligationsUseCase(obligationRepo, auditRepo, notificationPort);
 
+    const aiOrchestrator = new OfficeAIOrchestrator();
+    const orchestrateInboundEmail = new OrchestrateInboundEmailUseCase(
+      aiOrchestrator,
+      correspondenceRepo,
+      sequenceRepo,
+      auditRepo,
+      approvalRepo,
+      obligationRepo,
+      roomBookingRepo
+    );
+
     container = {
       sequenceRepo,
       correspondenceRepo,
@@ -71,12 +84,14 @@ describe("API End-to-End Integration Tests", () => {
       auditRepo,
       supplyRepo,
       roomBookingRepo,
+      aiOrchestrator,
       notificationPort,
       registerCorrespondence,
       processInvoice,
       decideApproval,
       visitorCheckIn,
       checkExpiringObligations,
+      orchestrateInboundEmail,
     };
 
     app = createApp({ container });
@@ -623,5 +638,33 @@ describe("API End-to-End Integration Tests", () => {
       const currentEvent = chronological[i];
       expect(currentEvent.prevHash).toBe(prevEvent.payloadHash);
     }
+  });
+
+  it("GET /api/orchestrator/sample-emails should return pre-configured test emails", async () => {
+    const res = await app.request("/api/orchestrator/sample-emails");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.length).toBe(3);
+    expect(body.data[0].id).toBe("sample-meeting");
+  });
+
+  it("POST /api/orchestrator/process-email should parse meeting email and auto-book calendar room", async () => {
+    const res = await app.request("/api/orchestrator/process-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: "partner@ventures.com",
+        subject: "Executive Strategy Meeting",
+        body: "Please schedule our sync for this Thursday at 14:00 (14:00 - 15:00) in Boardroom.",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.actionExecuted).toBe("ROOM_BOOKED");
+    expect(body.data.resultPayload.roomName).toBe("Board");
+    expect(body.data.resultPayload.timeSlot).toBe("14:00 - 15:00");
+    expect(body.data.resultPayload.calendarEvent.status).toBe("confirmed");
   });
 });

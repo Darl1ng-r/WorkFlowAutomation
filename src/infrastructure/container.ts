@@ -27,6 +27,8 @@ import { ProcessInvoiceUseCase } from "@application/use-cases/process-invoice.us
 import { DecideApprovalUseCase } from "@application/use-cases/decide-approval.use-case";
 import { VisitorCheckInUseCase } from "@application/use-cases/visitor-check-in.use-case";
 import { CheckExpiringObligationsUseCase } from "@application/use-cases/check-expiring-obligations.use-case";
+import { OrchestrateInboundEmailUseCase } from "@application/use-cases/orchestrate-inbound-email.use-case";
+import { OfficeAIOrchestrator } from "./ai/office-ai-orchestrator";
 import { INotificationPort, IStoragePort, ICrmPort } from "@application/ports";
 import { InMemoryCrmAdapter } from "./crm/hubspot-crm-adapter";
 
@@ -41,6 +43,7 @@ export interface ServiceContainer {
   sequenceRepo: ISequenceRepository;
   supplyRepo: ISupplyRepository;
   roomBookingRepo: IRoomBookingRepository;
+  aiOrchestrator: OfficeAIOrchestrator;
   db?: D1Database | undefined;
   storagePort?: IStoragePort | undefined;
   notificationPort?: INotificationPort | undefined;
@@ -52,6 +55,7 @@ export interface ServiceContainer {
   decideApproval: DecideApprovalUseCase;
   visitorCheckIn: VisitorCheckInUseCase;
   checkExpiringObligations: CheckExpiringObligationsUseCase;
+  orchestrateInboundEmail: OrchestrateInboundEmailUseCase;
 }
 
 /**
@@ -126,6 +130,17 @@ export function createContainerFromEnv(env: {
     auditRepo
   );
 
+  const aiOrchestrator = new OfficeAIOrchestrator(env.AI);
+  const orchestrateInboundEmail = new OrchestrateInboundEmailUseCase(
+    aiOrchestrator,
+    correspondenceRepo,
+    sequenceRepo,
+    auditRepo,
+    approvalRepo,
+    obligationRepo,
+    roomBookingRepo
+  );
+
   return {
     db: env.DB,
     correspondenceRepo,
@@ -138,6 +153,7 @@ export function createContainerFromEnv(env: {
     sequenceRepo,
     supplyRepo,
     roomBookingRepo,
+    aiOrchestrator,
     storagePort,
     crmPort,
     registerCorrespondence,
@@ -145,5 +161,6 @@ export function createContainerFromEnv(env: {
     decideApproval,
     visitorCheckIn,
     checkExpiringObligations,
+    orchestrateInboundEmail,
   };
 }

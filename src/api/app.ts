@@ -13,6 +13,7 @@ import { createAuditRouter } from "./routes/audit.router";
 import { createTelemetryRouter } from "./routes/telemetry.router";
 import { createSopRouter } from "./routes/sop.router";
 import { createSuppliesRouter } from "./routes/supplies.router";
+import { createOrchestratorRouter } from "./routes/orchestrator.router";
 import { CLIENT_HTML } from "@client/html-bundle";
 
 export interface AppOptions {
@@ -90,6 +91,7 @@ export function createApp(options: AppOptions): Hono {
   app.route("/api/metrics", createTelemetryRouter(container));
   app.route("/api/system", createSopRouter());
   app.route("/api/supplies", createSuppliesRouter(container));
+  app.route("/api/orchestrator", createOrchestratorRouter(container));
 
   return app;
 }

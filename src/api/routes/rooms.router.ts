@@ -83,7 +83,9 @@ export function createRoomsRouter(options?: { db?: D1Database | undefined; roomB
     const rooms = defaultRooms.map((room) => {
       const slots = room.slots.map((slot) => {
         const match = bookings.find(
-          (b) => b.roomName === room.name && b.timeSlot === slot.time
+          (b) =>
+            b.roomName === room.name &&
+            (b.timeSlot === slot.time || b.timeSlot.split(" - ")[0] === slot.time.split(" - ")[0])
         );
         if (match) {
           return { time: slot.time, status: "BOOKED", title: match.title, host: match.hostName };
