@@ -10,6 +10,8 @@ import {
   InMemoryObligationRepository,
   InMemoryVisitorRepository,
   InMemoryAuditRepository,
+  InMemorySupplyRepository,
+  InMemoryRoomBookingRepository,
   MockNotificationPort,
 } from "../mocks/in-memory-repositories";
 import { RegisterCorrespondenceUseCase } from "@application/use-cases/register-correspondence.use-case";
@@ -31,6 +33,8 @@ describe("API End-to-End Integration Tests", () => {
     const obligationRepo = new InMemoryObligationRepository();
     const visitorRepo = new InMemoryVisitorRepository();
     const auditRepo = new InMemoryAuditRepository();
+    const supplyRepo = new InMemorySupplyRepository();
+    const roomBookingRepo = new InMemoryRoomBookingRepository();
     const notificationPort = new MockNotificationPort();
 
     const registerCorrespondence = new RegisterCorrespondenceUseCase(
@@ -50,7 +54,8 @@ describe("API End-to-End Integration Tests", () => {
       approvalRepo,
       invoiceRepo,
       correspondenceRepo,
-      auditRepo
+      auditRepo,
+      supplyRepo
     );
     const visitorCheckIn = new VisitorCheckInUseCase(visitorRepo, auditRepo, notificationPort);
     const checkExpiringObligations = new CheckExpiringObligationsUseCase(obligationRepo, auditRepo, notificationPort);
@@ -64,6 +69,8 @@ describe("API End-to-End Integration Tests", () => {
       obligationRepo,
       visitorRepo,
       auditRepo,
+      supplyRepo,
+      roomBookingRepo,
       notificationPort,
       registerCorrespondence,
       processInvoice,
@@ -377,5 +384,244 @@ describe("API End-to-End Integration Tests", () => {
     expect(body.data.markdownMemo).toContain("Executive Monthly Operations Progress Report");
     expect(body.data.markdownMemo).toContain("Total Labor Hours Saved");
     expect(body.data.markdownMemo).toContain("AI Extraction Accuracy");
+  });
+
+  it("STRICT MODE: unauthenticated corporate API requests should be rejected with 401 UNAUTHORIZED", async () => {
+    const strictApp = createApp({ container, authMode: "STRICT" });
+    const res = await strictApp.request("/api/approvals");
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("SECURITY: forged or malformed Cloudflare Access JWT assertion should be rejected with 401", async () => {
+    const res = await app.request("/api/approvals", {
+      headers: {
+        "Cf-Access-Jwt-Assertion": "forged.header.signature",
+      },
+    });
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("RBAC: unauthorized STAFF role attempting to approve invoices should be rejected with 403 FORBIDDEN", async () => {
+    // 1. Register prerequisite correspondence
+    const corrRes = await app.request("/api/correspondence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        direction: "IN",
+        channel: "EMAIL",
+        subject: "Invoice SEC-RBAC-001 Inbound",
+        sourceSender: "Saudi Electricity Company",
+      }),
+    });
+    const corrBody = (await corrRes.json()) as any;
+    const correspondenceId = corrBody.data.correspondence.id;
+
+    // 2. Process an invoice that creates an approval
+    await app.request("/api/invoices/process", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        correspondenceId,
+        documentId: "b0000000-0000-0000-0000-000000000002",
+        confidenceScore: 0.9,
+        extraction: {
+          vendorName: "Saudi Electricity Company",
+          invoiceNo: "SEC-RBAC-001",
+          issueDate: "2026-03-01",
+          dueDate: "2026-03-15",
+          netAmount: 1000,
+          taxAmount: 150,
+          totalAmount: 1150,
+          currency: "SAR",
+          lineItems: [],
+        },
+      }),
+    });
+
+    const approvalsRes = await app.request("/api/approvals");
+    const approvalsBody = (await approvalsRes.json()) as any;
+    const invApproval = approvalsBody.data.find((a: any) => a.targetEntityType === "INVOICE");
+    expect(invApproval).toBeDefined();
+
+    // 3. Attempt approval as regular staff (employee@company.local -> role 'STAFF')
+    const staffRes = await app.request(`/api/approvals/${invApproval.id}/decide`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-email": "staff.member@company.com",
+      },
+      body: JSON.stringify({
+        decision: "APPROVED",
+        notes: "Unauthorized attempt",
+      }),
+    });
+
+    expect(staffRes.status).toBe(403);
+    const staffBody = (await staffRes.json()) as any;
+    expect(staffBody.success).toBe(false);
+    expect(staffBody.error.code).toBe("FORBIDDEN");
+    expect(staffBody.error.message).toContain("Requires DIRECTOR or FINANCE");
+  });
+
+  it("SECURITY: Kiosk role cannot access internal visitor list or perform unauthorized checkout", async () => {
+    // 1. Kiosk role accessing /api/kiosk/active should be forbidden
+    const activeRes = await app.request("/api/kiosk/active", {
+      headers: {
+        "x-user-email": "frontdesk-kiosk@office.local",
+      },
+    });
+    expect(activeRes.status).toBe(403);
+    const activeBody = (await activeRes.json()) as any;
+    expect(activeBody.error.code).toBe("FORBIDDEN");
+
+    // 2. Kiosk role attempting checkout should be forbidden
+    const checkOutRes = await app.request("/api/kiosk/check-out", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-email": "frontdesk-kiosk@office.local",
+      },
+      body: JSON.stringify({
+        visitorId: "c0000000-0000-0000-0000-000000000003",
+      }),
+    });
+    expect(checkOutRes.status).toBe(403);
+    const checkOutBody = (await checkOutRes.json()) as any;
+    expect(checkOutBody.error.code).toBe("FORBIDDEN");
+  });
+
+  it("POST /api/approvals/:id/undo should revert decided approval back to PENDING and roll back status", async () => {
+    // 1. Trigger supply reorder
+    await app.request("/api/supplies/sup-002/consume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity: 1 }),
+    });
+
+    const listRes = await app.request("/api/approvals");
+    const listBody = (await listRes.json()) as any;
+    const reorderApproval = listBody.data.find(
+      (a: any) => a.targetEntityType === "SUPPLY_REORDER" && a.targetEntityId === "sup-002"
+    );
+    expect(reorderApproval).toBeDefined();
+
+    // 2. Decide approval as Operations
+    const decideRes = await app.request(`/api/approvals/${reorderApproval.id}/decide`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-email": "operations@company.com",
+      },
+      body: JSON.stringify({
+        decision: "APPROVED",
+        notes: "Approved coffee purchase",
+      }),
+    });
+    expect(decideRes.status).toBe(200);
+
+    // 3. Immediately Undo decision
+    const undoRes = await app.request(`/api/approvals/${reorderApproval.id}/undo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-email": "operations@company.com",
+      },
+    });
+    expect(undoRes.status).toBe(200);
+    const undoBody = (await undoRes.json()) as any;
+    expect(undoBody.success).toBe(true);
+
+    // 4. Verify approval is back to PENDING in database
+    const pendingListRes = await app.request("/api/approvals");
+    const pendingListBody = (await pendingListRes.json()) as any;
+    const reverted = pendingListBody.data.find((a: any) => a.id === reorderApproval.id);
+    expect(reverted).toBeDefined();
+    expect(reverted.decision).toBe("PENDING");
+  });
+
+  it("CONCURRENCY: concurrent correspondence registrations should generate gapless unique reference numbers without collision", async () => {
+    const concurrentRequests = Array.from({ length: 20 }, (_, i) =>
+      app.request("/api/correspondence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          direction: "IN",
+          channel: "EMAIL",
+          sourceSender: `Vendor ${i} Inc`,
+          recipient: "Executive Office",
+          subject: `Concurrent Contract Submission ${i}`,
+        }),
+      })
+    );
+
+    const responses = await Promise.all(concurrentRequests);
+    const results = await Promise.all(responses.map((r) => r.json() as Promise<any>));
+
+    const refNumbers = results.map((r) => {
+      expect(r.success).toBe(true);
+      return r.data.referenceNumber;
+    });
+
+    // Verify all 20 reference numbers are strictly unique
+    const uniqueRefs = new Set(refNumbers);
+    expect(uniqueRefs.size).toBe(20);
+    for (const ref of uniqueRefs) {
+      expect(ref).toMatch(/^IN-\d{4}-\d{6}$/);
+    }
+  });
+
+  it("CRYPTOGRAPHY: audit events maintain unbroken SHA-256 hash chains", async () => {
+    // Generate 3 sequential audit events
+    await app.request("/api/correspondence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        direction: "IN",
+        channel: "EMAIL",
+        subject: "Audit Test Correspondence 1",
+        sourceSender: "Ministry of Commerce",
+      }),
+    });
+    await app.request("/api/correspondence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        direction: "IN",
+        channel: "SCAN",
+        subject: "Audit Test Correspondence 2",
+        sourceSender: "ZATCA Tax Authority",
+      }),
+    });
+    await app.request("/api/kiosk/check-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: "Auditor Smith",
+        hostEmployeeEmail: "ceo@company.com",
+        purpose: "Annual Audit Inspection",
+        ndaSigned: true,
+      }),
+    });
+
+    const auditRes = await app.request("/api/audit");
+    expect(auditRes.status).toBe(200);
+    const body = (await auditRes.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.length).toBeGreaterThanOrEqual(3);
+
+    // Verify that every event's prevHash corresponds to the prior event's chainHash
+    // body.data is sorted descending (most recent first)
+    const chronological = [...body.data].reverse();
+    for (let i = 1; i < chronological.length; i++) {
+      const prevEvent = chronological[i - 1];
+      const currentEvent = chronological[i];
+      expect(currentEvent.prevHash).toBe(prevEvent.payloadHash);
+    }
   });
 });

@@ -9,6 +9,8 @@ import {
   ApprovalEntity,
   AuditEventEntity,
   CorrespondenceDirection,
+  RoomBookingEntity,
+  SupplyItemEntity,
 } from "./types";
 
 export interface ISequenceRepository {
@@ -73,6 +75,10 @@ export interface ICallLogRepository {
 export interface IApprovalRepository {
   create(entity: ApprovalEntity): Promise<ApprovalEntity>;
   findById(id: string): Promise<ApprovalEntity | null>;
+  findPendingByTarget(
+    targetEntityType: ApprovalEntity["targetEntityType"],
+    targetEntityId: string
+  ): Promise<ApprovalEntity | null>;
   updateDecision(
     id: string,
     decision: ApprovalEntity["decision"],
@@ -87,4 +93,17 @@ export interface IAuditRepository {
   append(event: Omit<AuditEventEntity, "id" | "prevHash">): Promise<AuditEventEntity>;
   getLastHash(): Promise<string>;
   listRecent(limit?: number): Promise<AuditEventEntity[]>;
+}
+
+export interface ISupplyRepository {
+  list(): Promise<SupplyItemEntity[]>;
+  findById(id: string): Promise<SupplyItemEntity | null>;
+  consume(id: string, quantity: number): Promise<SupplyItemEntity | null>;
+  updateStatus(id: string, status: SupplyItemEntity["status"]): Promise<void>;
+  reorder(id: string): Promise<SupplyItemEntity | null>;
+}
+
+export interface IRoomBookingRepository {
+  list(): Promise<RoomBookingEntity[]>;
+  create(entity: RoomBookingEntity): Promise<RoomBookingEntity>;
 }

@@ -1,0 +1,55 @@
+name: CI & Reliability Guardrails
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Typecheck, Test & Bundle Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify HTML Bundle Synchronization
+        run: |
+          pnpm bundle:html
+          git diff --exit-code src/client/html-bundle.ts || (echo "ERROR: src/client/html-bundle.ts is out of sync with src/client/index.html. Run 'pnpm bundle:html' and commit the result." && exit 1)
+
+      - name: TypeScript Static Typecheck
+        run: pnpm typecheck
+
+      - name: Vitest Suite (Unit, Integration, Security & Concurrency)
+        run: pnpm test

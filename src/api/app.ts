@@ -17,14 +17,28 @@ import { CLIENT_HTML } from "@client/html-bundle";
 
 export interface AppOptions {
   container: ServiceContainer;
+  authMode?: "STRICT" | "PERMISSIVE" | undefined;
 }
 
 export function createApp(options: AppOptions): Hono {
   const app = new Hono();
-  const { container } = options;
+  const { container, authMode } = options;
+  const isStrict = authMode === "STRICT";
 
   // Global Error Handler
   app.onError(errorHandler);
+
+  // Security Headers Middleware (OWASP A05 & S-3 Defense in Depth)
+  app.use("*", async (c, next) => {
+    await next();
+    c.res.headers.set(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';"
+    );
+    c.res.headers.set("X-Content-Type-Options", "nosniff");
+    c.res.headers.set("X-Frame-Options", "DENY");
+    c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  });
 
   // Serve Interactive Client UI
   app.get("/", (c) => c.html(CLIENT_HTML));
@@ -49,18 +63,29 @@ export function createApp(options: AppOptions): Hono {
     );
   });
 
-  // Public kiosk endpoints (allow visitors to check in without employee login)
-  const kioskRouter = createKioskRouter(container);
-  app.use("/api/kiosk/*", authMiddleware({ allowKiosk: true }));
-  app.route("/api/kiosk", kioskRouter);
+  // Public kiosk check-in endpoint (allow visitors to check in at front desk tablet)
+  app.use("/api/kiosk/check-in", authMiddleware({ allowKiosk: true }));
 
-  // Authenticated corporate endpoints
-  app.use("/api/*", authMiddleware());
+  // Authenticated corporate endpoints (gated with authMiddleware across all sub-paths)
+  app.use("*", async (c, next) => {
+    if (c.req.path.startsWith("/api/")) {
+      return authMiddleware({ strictMode: isStrict })(c, next);
+    }
+    return next();
+  });
+
+  // Mount Application Routers
+  const kioskRouter = createKioskRouter(container);
+  app.route("/api/kiosk", kioskRouter);
+  app.route("/api/visitors", kioskRouter);
   app.route("/api/correspondence", createCorrespondenceRouter(container));
   app.route("/api/invoices", createInvoicesRouter(container));
   app.route("/api/approvals", createApprovalsRouter(container));
   app.route("/api/obligations", createObligationsRouter(container));
-  app.route("/api/rooms", createRoomsRouter(container.db));
+  app.route(
+    "/api/rooms",
+    createRoomsRouter({ db: container.db, roomBookingRepo: container.roomBookingRepo })
+  );
   app.route("/api/audit", createAuditRouter(container));
   app.route("/api/metrics", createTelemetryRouter(container));
   app.route("/api/system", createSopRouter());

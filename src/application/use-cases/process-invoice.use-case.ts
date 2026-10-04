@@ -61,17 +61,29 @@ export class ProcessInvoiceUseCase {
     let isAnomalySpike = false;
     let anomalyReason: string | undefined;
 
+    // Strict word-boundary regex prevents false positives on 'Securitas', 'Current Tech', etc.
+    const utilityVendorRegex = /\b(electric|electricity|water|telecom|rent|sec|nwc|stc|ooredoo|zain|municipality)\b/i;
     const isUtilityOrRecurring =
       extraction.category === "UTILITY_ELECTRICITY" ||
       extraction.category === "UTILITY_WATER" ||
       extraction.category === "OFFICE_RENT" ||
       extraction.category === "TELECOM" ||
-      /electric|water|telecom|rent|sec|nwc|stc|ooredoo|zain|municipality/i.test(extraction.vendorName);
+      utilityVendorRegex.test(extraction.vendorName);
 
     const pastInvoices = await this.invoiceRepo.findByVendor(extraction.vendorName);
-    if (isUtilityOrRecurring && pastInvoices.length > 0) {
+    
+    // Filter to trailing 90 days and exclude previous anomalies to prevent baseline pollution
+    const currentIssueMs = new Date(extraction.issueDate).getTime();
+    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+    const validBaselineInvoices = pastInvoices.filter((inv) => {
+      const invMs = new Date(inv.issueDate).getTime();
+      const isWithinWindow = (currentIssueMs - invMs) >= 0 && (currentIssueMs - invMs) <= ninetyDaysMs;
+      return isWithinWindow && !inv.isAnomalySpike;
+    });
+
+    if (isUtilityOrRecurring && validBaselineInvoices.length > 0) {
       const historicalAverage =
-        pastInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0) / pastInvoices.length;
+        validBaselineInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0) / validBaselineInvoices.length;
 
       // If current invoice exceeds historical average by >15%
       if (extraction.totalAmount > historicalAverage * 1.15) {
@@ -79,7 +91,7 @@ export class ProcessInvoiceUseCase {
         const percentageIncrease = Math.round(
           ((extraction.totalAmount - historicalAverage) / historicalAverage) * 100
         );
-        anomalyReason = `Utility Spike Detected: Total (${extraction.totalAmount} ${extraction.currency}) is ${percentageIncrease}% above the historical average (${Math.round(historicalAverage * 100) / 100} ${extraction.currency}) across ${pastInvoices.length} previous invoices.`;
+        anomalyReason = `Utility Spike Detected: Total (${extraction.totalAmount} ${extraction.currency}) is ${percentageIncrease}% above the historical average (90-day baseline average: ${Math.round(historicalAverage * 100) / 100} ${extraction.currency}) across ${validBaselineInvoices.length} previous invoices.`;
       }
     }
 
@@ -98,6 +110,22 @@ export class ProcessInvoiceUseCase {
     const nowIso = new Date().toISOString();
     const invoiceId = crypto.randomUUID();
 
+    // Resolve clean category without improperly defaulting non-electricity vendors
+    let resolvedCategory = extraction.category;
+    if (!resolvedCategory) {
+      if (/\b(electric|electricity|sec)\b/i.test(extraction.vendorName)) {
+        resolvedCategory = "UTILITY_ELECTRICITY";
+      } else if (/\b(water|nwc)\b/i.test(extraction.vendorName)) {
+        resolvedCategory = "UTILITY_WATER";
+      } else if (/\b(stc|ooredoo|zain|telecom)\b/i.test(extraction.vendorName)) {
+        resolvedCategory = "TELECOM";
+      } else if (/\b(rent)\b/i.test(extraction.vendorName)) {
+        resolvedCategory = "OFFICE_RENT";
+      } else {
+        resolvedCategory = "OTHER";
+      }
+    }
+
     // 5. Save Invoice Record (DRAFT_PENDING if L2)
     const invoice: InvoiceEntity = {
       id: invoiceId,
@@ -112,7 +140,7 @@ export class ProcessInvoiceUseCase {
       taxAmount: extraction.taxAmount,
       totalAmount: extraction.totalAmount,
       currency: extraction.currency,
-      category: extraction.category ?? (isUtilityOrRecurring ? "UTILITY_ELECTRICITY" : "OTHER"),
+      category: resolvedCategory,
       isAnomalySpike,
       anomalyReason,
       status: autonomyLevel === "L3" ? "APPROVED" : "DRAFT_PENDING",
@@ -140,7 +168,7 @@ export class ProcessInvoiceUseCase {
           isAnomalySpike,
           anomalyReason,
         },
-        decision: "APPROVED", // Default action proposed by AI, waiting for human decision
+        decision: "PENDING",
         decidedByEmail: undefined,
         decidedAt: undefined,
         createdAt: nowIso,
@@ -150,7 +178,7 @@ export class ProcessInvoiceUseCase {
 
       if (this.notificationPort) {
         const notifTitle = isAnomalySpike
-          ? `⚠️ Expense Anomaly Detected: ${extraction.vendorName}`
+          ? `[Anomaly Alert] Expense Anomaly Detected: ${extraction.vendorName}`
           : `Invoice Review Required: ${extraction.vendorName}`;
         const notifMsg = isAnomalySpike
           ? `${anomalyReason} Verification required prior to bill draft creation.`

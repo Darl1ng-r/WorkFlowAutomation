@@ -19,7 +19,13 @@ import {
   ApprovalEntity,
   AuditEventEntity,
   CorrespondenceDirection,
+  RoomBookingEntity,
+  SupplyItemEntity,
 } from "@domain/types";
+import {
+  ISupplyRepository,
+  IRoomBookingRepository,
+} from "@domain/repositories";
 import { INotificationPort } from "@application/ports";
 
 export class InMemorySequenceRepository implements ISequenceRepository {
@@ -148,6 +154,20 @@ export class InMemoryApprovalRepository implements IApprovalRepository {
     return this.items.find((i) => i.id === id) ?? null;
   }
 
+  async findPendingByTarget(
+    targetEntityType: ApprovalEntity["targetEntityType"],
+    targetEntityId: string
+  ): Promise<ApprovalEntity | null> {
+    return (
+      this.items.find(
+        (i) =>
+          i.targetEntityType === targetEntityType &&
+          i.targetEntityId === targetEntityId &&
+          (i.decision === "PENDING" || i.decidedAt === undefined)
+      ) ?? null
+    );
+  }
+
   async updateDecision(
     id: string,
     decision: ApprovalEntity["decision"],
@@ -166,7 +186,7 @@ export class InMemoryApprovalRepository implements IApprovalRepository {
   }
 
   async listPending(): Promise<ApprovalEntity[]> {
-    return this.items.filter((i) => i.decidedAt === undefined);
+    return this.items.filter((i) => i.decision === "PENDING" || i.decidedAt === undefined);
   }
 }
 
@@ -255,13 +275,22 @@ export class InMemoryAuditRepository implements IAuditRepository {
   async append(event: Omit<AuditEventEntity, "id" | "prevHash">): Promise<AuditEventEntity> {
     const prevHash = this.lastHash;
     const nextId = this.items.length + 1;
+
+    // Cryptographic chain linkage: SHA-256(prevHash || ":" || payloadHash || ":" || actorEmail || ":" || action || ":" || occurredAt)
+    const canonical = `${prevHash}:${event.payloadHash}:${event.actorEmail}:${event.action}:${event.occurredAt}`;
+    const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+    const chainHash = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     const fullEvent: AuditEventEntity = {
       ...event,
       id: nextId,
+      payloadHash: chainHash,
       prevHash,
     };
     this.items.push(fullEvent);
-    this.lastHash = event.payloadHash;
+    this.lastHash = chainHash;
     return fullEvent;
   }
 
@@ -291,5 +320,118 @@ export class MockNotificationPort implements INotificationPort {
     priority?: "NORMAL" | "HIGH" | "URGENT";
   }): Promise<void> {
     this.sentCards.push(options);
+  }
+}
+
+export class InMemorySupplyRepository implements ISupplyRepository {
+  public items: SupplyItemEntity[] = [
+    {
+      id: "sup-001",
+      name: "A4 High-White Copy Paper (80gsm)",
+      category: "PRINTING",
+      currentStock: 6,
+      parLevel: 4,
+      unit: "Cartons (5 reams)",
+      supplier: "Office Depot Saudi",
+      unitPrice: 120,
+      currency: "SAR",
+      status: "OK",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "sup-002",
+      name: "Arabica Blend Espresso Whole Beans",
+      category: "PANTRY",
+      currentStock: 2,
+      parLevel: 3,
+      unit: "1kg Bags",
+      supplier: "Specialty Bean Roasters",
+      unitPrice: 95,
+      currency: "SAR",
+      status: "LOW_STOCK",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "sup-003",
+      name: "HP LaserJet Enterprise Black Toner (W9004MC)",
+      category: "PRINTING",
+      currentStock: 1,
+      parLevel: 2,
+      unit: "Cartridges",
+      supplier: "Saudi Xerox & HP Solutions",
+      unitPrice: 420,
+      currency: "SAR",
+      status: "LOW_STOCK",
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "sup-004",
+      name: "Anker USB-C Multiport 7-in-1 Hub",
+      category: "IT_ACCESSORY",
+      currentStock: 4,
+      parLevel: 2,
+      unit: "Units",
+      supplier: "Jarir Bookstore Corporate",
+      unitPrice: 185,
+      currency: "SAR",
+      status: "OK",
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+
+  async list(): Promise<SupplyItemEntity[]> {
+    return [...this.items];
+  }
+
+  async findById(id: string): Promise<SupplyItemEntity | null> {
+    return this.items.find((i) => i.id === id) ?? null;
+  }
+
+  async consume(id: string, quantity: number): Promise<SupplyItemEntity | null> {
+    const item = await this.findById(id);
+    if (!item) return null;
+    item.currentStock = Math.max(0, item.currentStock - quantity);
+    item.status = item.currentStock <= item.parLevel ? "LOW_STOCK" : "OK";
+    item.updatedAt = new Date().toISOString();
+    return item;
+  }
+
+  async updateStatus(id: string, status: SupplyItemEntity["status"]): Promise<void> {
+    const item = await this.findById(id);
+    if (item) {
+      item.status = status;
+      item.updatedAt = new Date().toISOString();
+    }
+  }
+
+  async reorder(id: string): Promise<SupplyItemEntity | null> {
+    const item = await this.findById(id);
+    if (!item) return null;
+    item.status = "REORDER_TRIGGERED";
+    item.updatedAt = new Date().toISOString();
+    return item;
+  }
+}
+
+export class InMemoryRoomBookingRepository implements IRoomBookingRepository {
+  public items: RoomBookingEntity[] = [
+    {
+      id: "rb-default-1",
+      roomName: "Board",
+      timeSlot: "10:00 - 11:30",
+      title: "Lease review",
+      hostName: "Legal Team",
+      source: "INITIAL_SEED",
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  async list(): Promise<RoomBookingEntity[]> {
+    return [...this.items];
+  }
+
+  async create(entity: RoomBookingEntity): Promise<RoomBookingEntity> {
+    this.items.push(entity);
+    return entity;
   }
 }

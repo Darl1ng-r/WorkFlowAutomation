@@ -8,6 +8,8 @@ import {
   IApprovalRepository,
   IAuditRepository,
   ISequenceRepository,
+  ISupplyRepository,
+  IRoomBookingRepository,
 } from "@domain/repositories";
 import {
   CorrespondenceEntity,
@@ -19,24 +21,22 @@ import {
   ApprovalEntity,
   AuditEventEntity,
   CorrespondenceDirection,
+  SupplyItemEntity,
+  RoomBookingEntity,
 } from "@domain/types";
 
 export class D1SequenceRepository implements ISequenceRepository {
   constructor(private readonly db: D1Database) {}
 
   async getNextSequence(direction: CorrespondenceDirection, year: number): Promise<number> {
-    // Atomic upsert with SQLite
-    await this.db
+    // Atomic single-statement upsert with RETURNING in SQLite/D1 guarantees race-condition immunity
+    const row = await this.db
       .prepare(
         `INSERT INTO sequence_counters (direction, year, current_val)
          VALUES (?, ?, 1)
-         ON CONFLICT(direction, year) DO UPDATE SET current_val = current_val + 1;`
+         ON CONFLICT(direction, year) DO UPDATE SET current_val = current_val + 1
+         RETURNING current_val;`
       )
-      .bind(direction, year)
-      .run();
-
-    const row = await this.db
-      .prepare(`SELECT current_val FROM sequence_counters WHERE direction = ? AND year = ?;`)
       .bind(direction, year)
       .first<{ current_val: number }>();
 
@@ -355,6 +355,21 @@ export class D1ApprovalRepository implements IApprovalRepository {
     return row ? this.mapRow(row) : null;
   }
 
+  async findPendingByTarget(
+    targetEntityType: ApprovalEntity["targetEntityType"],
+    targetEntityId: string
+  ): Promise<ApprovalEntity | null> {
+    const row = await this.db
+      .prepare(
+        `SELECT * FROM approvals 
+         WHERE target_entity_type = ? AND target_entity_id = ? AND (decision = 'PENDING' OR decided_at IS NULL)
+         LIMIT 1;`
+      )
+      .bind(targetEntityType, targetEntityId)
+      .first<any>();
+    return row ? this.mapRow(row) : null;
+  }
+
   async updateDecision(
     id: string,
     decision: ApprovalEntity["decision"],
@@ -382,7 +397,7 @@ export class D1ApprovalRepository implements IApprovalRepository {
 
   async listPending(): Promise<ApprovalEntity[]> {
     const { results } = await this.db
-      .prepare(`SELECT * FROM approvals WHERE decided_at IS NULL ORDER BY created_at DESC;`)
+      .prepare(`SELECT * FROM approvals WHERE decision = 'PENDING' OR decided_at IS NULL ORDER BY created_at DESC;`)
       .all<any>();
     return (results ?? []).map((r) => this.mapRow(r));
   }
@@ -577,6 +592,13 @@ export class D1AuditRepository implements IAuditRepository {
   async append(event: Omit<AuditEventEntity, "id" | "prevHash">): Promise<AuditEventEntity> {
     const prevHash = await this.getLastHash();
 
+    // Cryptographic chain linkage: SHA-256(prevHash || ":" || payloadHash || ":" || actorEmail || ":" || action || ":" || occurredAt)
+    const canonical = `${prevHash}:${event.payloadHash}:${event.actorEmail}:${event.action}:${event.occurredAt}`;
+    const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+    const chainHash = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     const result = await this.db
       .prepare(
         `INSERT INTO audit_events (
@@ -589,7 +611,7 @@ export class D1AuditRepository implements IAuditRepository {
         event.action,
         event.entityType,
         event.entityId,
-        event.payloadHash,
+        chainHash,
         prevHash,
         event.occurredAt
       )
@@ -598,6 +620,7 @@ export class D1AuditRepository implements IAuditRepository {
     return {
       ...event,
       id: result?.id ?? 0,
+      payloadHash: chainHash,
       prevHash,
     };
   }
@@ -674,6 +697,121 @@ export class D1CallLogRepository implements ICallLogRepository {
       pbxCallId: r.pbx_call_id ?? undefined,
       createdAt: r.created_at,
     }));
+  }
+}
+
+export class D1SupplyRepository implements ISupplyRepository {
+  constructor(private readonly db: D1Database) {}
+
+  async list(): Promise<SupplyItemEntity[]> {
+    const { results } = await this.db
+      .prepare(`SELECT * FROM supplies ORDER BY name ASC;`)
+      .all<any>();
+    return (results ?? []).map((r) => this.mapRow(r));
+  }
+
+  async findById(id: string): Promise<SupplyItemEntity | null> {
+    const row = await this.db.prepare(`SELECT * FROM supplies WHERE id = ?;`).bind(id).first<any>();
+    return row ? this.mapRow(row) : null;
+  }
+
+  async consume(id: string, quantity: number): Promise<SupplyItemEntity | null> {
+    const item = await this.findById(id);
+    if (!item) return null;
+
+    const newStock = Math.max(0, item.currentStock - quantity);
+    const newStatus: SupplyItemEntity["status"] = newStock <= item.parLevel ? "LOW_STOCK" : "OK";
+    const nowIso = new Date().toISOString();
+
+    await this.db
+      .prepare(`UPDATE supplies SET current_stock = ?, status = ?, updated_at = ? WHERE id = ?;`)
+      .bind(newStock, newStatus, nowIso, id)
+      .run();
+
+    return {
+      ...item,
+      currentStock: newStock,
+      status: newStatus,
+      updatedAt: nowIso,
+    };
+  }
+
+  async updateStatus(id: string, status: SupplyItemEntity["status"]): Promise<void> {
+    const nowIso = new Date().toISOString();
+    await this.db
+      .prepare(`UPDATE supplies SET status = ?, updated_at = ? WHERE id = ?;`)
+      .bind(status, nowIso, id)
+      .run();
+  }
+
+  async reorder(id: string): Promise<SupplyItemEntity | null> {
+    const item = await this.findById(id);
+    if (!item) return null;
+    const nowIso = new Date().toISOString();
+    await this.db
+      .prepare(`UPDATE supplies SET status = 'REORDER_TRIGGERED', updated_at = ? WHERE id = ?;`)
+      .bind(nowIso, id)
+      .run();
+    return {
+      ...item,
+      status: "REORDER_TRIGGERED",
+      updatedAt: nowIso,
+    };
+  }
+
+  private mapRow(row: any): SupplyItemEntity {
+    return {
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      currentStock: Number(row.current_stock),
+      parLevel: Number(row.par_level),
+      unit: row.unit,
+      supplier: row.supplier,
+      unitPrice: Number(row.unit_price),
+      currency: row.currency,
+      status: row.status,
+      updatedAt: row.updated_at,
+    };
+  }
+}
+
+export class D1RoomBookingRepository implements IRoomBookingRepository {
+  constructor(private readonly db: D1Database) {}
+
+  async list(): Promise<RoomBookingEntity[]> {
+    const { results } = await this.db
+      .prepare(`SELECT * FROM room_bookings ORDER BY created_at ASC;`)
+      .all<any>();
+    return (results ?? []).map((r) => ({
+      id: r.id,
+      roomName: r.room_name,
+      timeSlot: r.time_slot,
+      title: r.title,
+      hostName: r.host_name,
+      source: r.source,
+      createdAt: r.created_at,
+    }));
+  }
+
+  async create(entity: RoomBookingEntity): Promise<RoomBookingEntity> {
+    const nowIso = new Date().toISOString();
+    await this.db
+      .prepare(
+        `INSERT INTO room_bookings (id, room_name, time_slot, title, host_name, source, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?);`
+      )
+      .bind(
+        entity.id,
+        entity.roomName,
+        entity.timeSlot,
+        entity.title,
+        entity.hostName,
+        entity.source ?? "OFFICE_OS",
+        entity.createdAt ?? nowIso
+      )
+      .run();
+    return entity;
   }
 }
 

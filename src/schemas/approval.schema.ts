@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ApprovalDecisionSchema = z.object({
   decision: z.enum(["APPROVED", "MODIFIED", "REJECTED"]),
-  decidedByEmail: z.string().email("Valid approver email required"),
+  decidedByEmail: z.string().email("Valid approver email required").optional(),
   humanDiff: z.record(z.unknown()).optional(),
   notes: z.string().max(500).optional(),
 });

@@ -35,7 +35,17 @@ export type ObligationType =
 
 export type ObligationStatus = "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "RENEWED";
 
-export type ApprovalDecision = "APPROVED" | "MODIFIED" | "REJECTED";
+export type ApprovalDecision = "PENDING" | "APPROVED" | "MODIFIED" | "REJECTED";
+
+export interface RoomBookingEntity {
+  id: string;
+  roomName: "Board" | "Sync" | "Huddle" | "Interview";
+  timeSlot: string;
+  title: string;
+  hostName: string;
+  source?: string | undefined;
+  createdAt?: string | undefined;
+}
 
 /**
  * Domain Entities

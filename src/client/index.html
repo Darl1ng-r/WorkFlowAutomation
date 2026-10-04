@@ -1993,7 +1993,7 @@
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
           <span>Approve first pending item</span>
-          <span><kbd class="kbd-chip">A</kbd></span>
+          <span><kbd class="kbd-chip">Shift A</kbd></span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
           <span>Toggle shortcuts cheat sheet</span>
@@ -2010,14 +2010,19 @@
   <!-- =========================================================================
        Operational ROI Telemetry & Live SOP Runbooks Modal
        ========================================================================= -->
-  <div class="modal-backdrop" id="modal-metrics" style="display: none;" onclick="if(event.target === this) closeMetricsModal()">
+  <div class="modal-backdrop" id="modal-metrics" style="display: none;" role="dialog" aria-modal="true" aria-label="Operational ROI and SOP Runbooks" onclick="if(event.target === this) closeMetricsModal()">
     <div class="modal-palette" style="max-width: 720px; padding: 24px; max-height: 85vh; display: flex; flex-direction: column;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
         <div style="display: flex; gap: 12px; align-items: center;">
           <button class="btn-clay" id="tab-metrics-roi" onclick="switchMetricsTab('roi')" style="padding: 6px 14px; font-size: 13.5px;">Live ROI Telemetry</button>
           <button class="btn-subtle" id="tab-metrics-sop" onclick="switchMetricsTab('sop')" style="padding: 6px 14px; font-size: 13.5px;">System SOP Runbooks</button>
         </div>
-        <button class="btn-subtle" onclick="closeMetricsModal()" style="padding: 4px 8px;">✕</button>
+        <button class="btn-subtle" onclick="closeMetricsModal()" style="padding: 4px 8px;" aria-label="Close modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <!-- Tab Content 1: Live ROI Telemetry -->
@@ -2034,9 +2039,9 @@
             <div class="caption" style="font-size: 11.5px; margin-top: 2px;">$45/hr blended loaded rate</div>
           </div>
           <div class="metric-card" style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 16px;">
-            <div class="caption">AI Accuracy Score</div>
-            <div class="stat-number tabular" id="m-ai-accuracy" style="font-size: 28px; color: var(--mint); margin-top: 4px;">98.6%</div>
-            <div class="caption" style="font-size: 11.5px; margin-top: 2px;">Error capture rate: 1.4%</div>
+            <div class="caption">AI Accuracy Status</div>
+            <div class="stat-number tabular" id="m-ai-accuracy" style="font-size: 24px; color: var(--mint); margin-top: 4px;">Calibrating</div>
+            <div class="caption" style="font-size: 11.5px; margin-top: 2px;">Measured from verified human decisions</div>
           </div>
         </div>
 
@@ -2128,19 +2133,15 @@
       </div>
 
       <div class="drawer-section">
-        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">AI Autonomous Extraction</label>
+        <label class="caption" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Document Classification</label>
         <div class="peek-ai-card">
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
             <span class="caption">Entity Classification</span>
             <span class="tabular font-bold" id="peek-type" style="font-size: 12.5px;">OFFICIAL_NOTICE</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-            <span class="caption">Confidence Score</span>
-            <span class="tabular" style="color: var(--green); font-weight: 600;">99.4% (Workers AI)</span>
-          </div>
           <div style="display: flex; justify-content: space-between;">
-            <span class="caption">Cryptographic Seal</span>
-            <span class="tabular chip chip-mint" style="font-size: 11px; padding: 2px 6px;">SHA-256 VERIFIED</span>
+            <span class="caption">Archival State</span>
+            <span class="tabular chip chip-mint" id="peek-archival" style="font-size: 11px; padding: 2px 6px;">INDEXED</span>
           </div>
         </div>
       </div>
@@ -2185,6 +2186,17 @@
        Application Logic & Client State
        ========================================================================= -->
   <script>
+    // XSS Sanitization Helper (S-3 Remediation)
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     // State Store
     const state = {
       theme: 'light',
@@ -2306,17 +2318,17 @@
         return;
       }
 
-      // Render cards
+      // Render cards with strict XSS sanitization and zero emojis
       const html = state.approvals.map(item => {
         const p = item.proposedPayload || {};
-        const title = p.subject || p.vendorName || item.proposedAction;
-        const fromInfo = p.from || (p.vendorName ? `Invoice ${p.invoiceNo}` : 'System Agent');
-        const shelf = p.shelf ? `<span class="chip chip-sage">${p.shelf}</span>` : '';
-        const summary = p.draftedReply || p.notes || `Proposed action: ${item.proposedAction}`;
-        const refBadge = p.refNo ? `<span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${p.refNo}', this)" title="Click to copy ref">${p.refNo}</span>` : '';
-        const amountBadge = p.totalAmount ? `<span class="chip chip-info tabular">${p.currency || 'SAR'} ${p.totalAmount}</span>` : '';
+        const title = escapeHtml(p.subject || p.vendorName || item.proposedAction);
+        const fromInfo = escapeHtml(p.from || (p.vendorName ? `Invoice ${p.invoiceNo || ''}` : 'System Agent'));
+        const shelf = p.shelf ? `<span class="chip chip-sage">${escapeHtml(p.shelf)}</span>` : '';
+        const summary = escapeHtml(p.draftedReply || p.notes || `Proposed action: ${item.proposedAction}`);
+        const refBadge = p.refNo ? `<span class="chip chip-mint tabular copyable-chip" onclick="copyRef('${escapeHtml(p.refNo)}', this)" title="Click to copy ref">${escapeHtml(p.refNo)}</span>` : '';
+        const amountBadge = p.totalAmount ? `<span class="chip chip-info tabular">${escapeHtml(p.currency || 'SAR')} ${escapeHtml(p.totalAmount)}</span>` : '';
         const anomalyBadge = p.isAnomalySpike
-          ? `<span class="chip chip-amber" title="${p.anomalyReason || 'Utility spike detected'}">⚠️ Expense Anomaly</span>`
+          ? `<span class="chip chip-amber" title="${escapeHtml(p.anomalyReason || 'Utility spike detected')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px; vertical-align: -1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>Expense Anomaly</span>`
           : '';
 
         return `
@@ -2352,8 +2364,8 @@
       if (approveList) approveList.innerHTML = html;
     }
 
-    // Optimistic UI: Approve with 6-second Undo Toast (6 → 1 click)
-    function optimisticApprove(id) {
+    // Reliable Approval with Server-Side Commit & Revert (A-6 Remediation)
+    async function optimisticApprove(id) {
       const idx = state.approvals.findIndex(a => a.id === id);
       if (idx === -1) return;
 
@@ -2372,7 +2384,21 @@
         renderApprovals();
       }, 350);
 
-      // Trigger Floating Undo Toast with 6-second timer
+      // Commit immediately to server to guarantee no loss on tab close
+      try {
+        await fetch(`/api/approvals/${id}/decide`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            decision: 'APPROVED',
+            notes: 'Approved via 1-click flow.'
+          })
+        });
+      } catch (err) {
+        console.error('Failed to commit approval decision:', err);
+      }
+
+      // Show Undo Toast
       showUndoToast(`Approved ${item.proposedPayload?.subject || item.proposedAction}.`, id);
     }
 
@@ -2395,23 +2421,9 @@
 
       if (toast) toast.classList.add('active');
 
-      // Schedule backend commit after 6 seconds if not undone
-      state.undoTimer = setTimeout(async () => {
+      state.undoTimer = setTimeout(() => {
         hideUndoToast();
         state.undoItem = null;
-        try {
-          await fetch(`/api/approvals/${id}/decide`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              decision: 'APPROVED',
-              decidedByEmail: 'director@company.com',
-              notes: 'Approved via 1-click optimistic flow.'
-            })
-          });
-        } catch (err) {
-          console.error('Failed to commit approval decision:', err);
-        }
       }, 6000);
     }
 
@@ -2420,15 +2432,24 @@
       if (toast) toast.classList.remove('active');
     }
 
-    function performUndo() {
+    async function performUndo() {
       if (!state.undoItem) return;
       if (state.undoTimer) clearTimeout(state.undoTimer);
 
+      const undoTarget = state.undoItem;
       // Re-insert item back
-      state.approvals.splice(state.undoItem.index, 0, state.undoItem.item);
+      state.approvals.splice(undoTarget.index, 0, undoTarget.item);
       state.undoItem = null;
       hideUndoToast();
       renderApprovals();
+
+      // Call server-side revert
+      try {
+        await fetch(`/api/approvals/${undoTarget.item.id}/undo`, { method: 'POST' });
+        showToast('Decision reverted.');
+      } catch (err) {
+        console.error('Failed to revert decision on server:', err);
+      }
     }
 
     async function rejectApproval(id) {
@@ -2439,13 +2460,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             decision: 'REJECTED',
-            decidedByEmail: 'director@company.com',
             notes: 'Rejected by operator.'
           })
         });
         await fetchApprovals();
       } catch (err) {
-        alert('Error rejecting item.');
+        console.error(err);
+        showToast('Error rejecting item.');
       }
     }
 
@@ -2599,23 +2620,23 @@
       tbody.innerHTML = items.map(c => {
         const isSelected = state.selectedMailIds && state.selectedMailIds.includes(c.id);
         return `
-        <tr class="${isSelected ? 'row-selected' : ''}" style="cursor: pointer;" onclick="openQuickPeek('${c.id}')">
+        <tr class="${isSelected ? 'row-selected' : ''}" style="cursor: pointer;" onclick="openQuickPeek('${escapeHtml(c.id)}')">
           <td style="width: 38px; text-align: center;" onclick="event.stopPropagation()">
-            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleMailSelect('${c.id}')">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleMailSelect('${escapeHtml(c.id)}')">
           </td>
-          <td><span class="chip chip-mint tabular copyable-chip" onclick="event.stopPropagation(); copyRef('${c.refNo}', this)" title="Click to copy ref">${c.refNo}</span></td>
+          <td><span class="chip chip-mint tabular copyable-chip" onclick="event.stopPropagation(); copyRef('${escapeHtml(c.refNo)}', this)" title="Click to copy ref">${escapeHtml(c.refNo)}</span></td>
           <td>
-            <strong>${c.subject}</strong>
-            <div class="caption">${c.direction === 'IN' ? 'Inbound' : 'Outbound'} · ${c.channel}</div>
+            <strong>${escapeHtml(c.subject)}</strong>
+            <div class="caption">${c.direction === 'IN' ? 'Inbound' : 'Outbound'} · ${escapeHtml(c.channel)}</div>
           </td>
-          <td>${c.sourceSender || c.recipient || '—'}</td>
+          <td>${escapeHtml(c.sourceSender || c.recipient || '—')}</td>
           <td>
-            <span class="chip chip-sage">${c.physicalLocation || 'Cabinet 2, Shelf B suggested'}</span>
+            <span class="chip chip-sage">${escapeHtml(c.physicalLocation || 'Cabinet 2, Shelf B suggested')}</span>
           </td>
           <td>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-              <span class="chip ${c.status === 'RECEIVED' ? 'chip-ok' : 'chip-info'}">${c.status}</span>
-              <button class="btn-subtle" onclick="event.stopPropagation(); openQuickPeek('${c.id}')" title="Quick Peek (Space)" style="padding: 3px 8px; font-size: 11.5px; opacity: 0.85;">
+              <span class="chip ${c.status === 'RECEIVED' ? 'chip-ok' : 'chip-info'}">${escapeHtml(c.status)}</span>
+              <button class="btn-subtle" onclick="event.stopPropagation(); openQuickPeek('${escapeHtml(c.id)}')" title="Quick Peek (Space)" style="padding: 3px 8px; font-size: 11.5px; opacity: 0.85;">
                 Peek
               </button>
             </div>
@@ -2708,19 +2729,19 @@
 
       container.innerHTML = state.rooms.map(room => `
         <div class="room-row">
-          <div class="room-name">${room.name}</div>
+          <div class="room-name">${escapeHtml(room.name)}</div>
           <div class="room-slots">
             ${room.slots.map(slot => {
               if (slot.status === 'BOOKED') {
                 return `
-                  <span class="slot-pill slot-booked" title="Host: ${slot.host || 'Team'}">
-                    ${slot.time} · ${slot.title || 'Booked'}
+                  <span class="slot-pill slot-booked" title="Host: ${escapeHtml(slot.host || 'Team')}">
+                    ${escapeHtml(slot.time)} · ${escapeHtml(slot.title || 'Booked')}
                   </span>
                 `;
               } else {
                 return `
-                  <span class="slot-pill slot-free" onclick="openRoomBookingModal('${room.name}', '${slot.time}')">
-                    ${slot.time} · Free
+                  <span class="slot-pill slot-free" data-room="${escapeHtml(room.name)}" data-slot="${escapeHtml(slot.time)}" onclick="openRoomBookingModal(this.dataset.room, this.dataset.slot)">
+                    ${escapeHtml(slot.time)} · Free
                   </span>
                 `;
               }
@@ -2806,7 +2827,7 @@
         // Compute days difference
         const now = new Date();
         const expiry = new Date(ob.expiresOn);
-        const diffDays = Math.max(1, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
+        const diffDays = Math.max(1, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
         const isUrgent = diffDays <= 14;
 
         return `
@@ -2815,8 +2836,8 @@
               *${diffDays}d*
             </div>
             <div style="flex: 1;">
-              <strong>${ob.title}</strong>
-              <div class="caption">${ob.issuer}</div>
+              <strong>${escapeHtml(ob.title)}</strong>
+              <div class="caption">${escapeHtml(ob.issuer)}</div>
             </div>
           </div>
         `;
@@ -2866,8 +2887,8 @@
         if (count > 0) {
           const first = state.activeVisitors[0];
           quickStatus.innerHTML = `
-            ${first.fullName} (${first.company || 'Guest'})
-            <button class="btn-subtle" style="padding: 2px 8px; font-size: 11px; margin-left: 4px;" onclick="checkoutGuest('${first.id}')">Check out</button>
+            ${escapeHtml(first.fullName)} (${escapeHtml(first.company || 'Guest')})
+            <button class="btn-subtle" style="padding: 2px 8px; font-size: 11px; margin-left: 4px;" data-id="${escapeHtml(first.id)}" onclick="checkoutGuest(this.dataset.id)">Check out</button>
           `;
         } else {
           quickStatus.innerHTML = `No guests in office`;
@@ -2887,11 +2908,11 @@
           listEl.innerHTML = state.activeVisitors.map(v => `
             <div class="room-row" style="margin-bottom: 8px;">
               <div>
-                <div style="font-weight: 600;">${v.fullName}</div>
-                <div class="caption">${v.company || 'Independent'} · Host: ${v.hostEmployeeEmail}</div>
+                <div style="font-weight: 600;">${escapeHtml(v.fullName)}</div>
+                <div class="caption">${escapeHtml(v.company || 'Independent')} · Host: ${escapeHtml(v.hostEmployeeEmail)}</div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button class="btn-subtle" style="padding: 4px 8px; font-size: 11.5px; gap: 4px; color: var(--sem-warn-text); background: var(--sem-warn-bg);" onclick="nudgeHost('${v.hostEmployeeEmail}', '${v.fullName}')" title="Waiting in lobby > 8m. Ping host on Google Chat.">
+                <button class="btn-subtle" style="padding: 4px 8px; font-size: 11.5px; gap: 4px; color: var(--sem-warn-text); background: var(--sem-warn-bg);" data-host="${escapeHtml(v.hostEmployeeEmail)}" data-name="${escapeHtml(v.fullName)}" onclick="nudgeHost(this.dataset.host, this.dataset.name)" title="Waiting in lobby > 8m. Ping host on Google Chat.">
                   <span class="icon">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -2899,8 +2920,8 @@
                   </span>
                   <span>Ping host</span>
                 </button>
-                <span class="chip chip-mint tabular">${v.badgeNumber}</span>
-                <button class="btn-subtle" style="padding: 4px 10px; font-size: 12px;" onclick="checkoutGuest('${v.id}')">Check out</button>
+                <span class="chip chip-mint tabular">${escapeHtml(v.badgeNumber)}</span>
+                <button class="btn-subtle" style="padding: 4px 10px; font-size: 12px;" data-id="${escapeHtml(v.id)}" onclick="checkoutGuest(this.dataset.id)">Check out</button>
               </div>
             </div>
           `).join('');
@@ -3149,11 +3170,11 @@
             container.innerHTML = events.map(ev => `
               <div class="audit-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13.5px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <strong style="color: var(--teal);">${ev.action}</strong>
+                  <strong style="color: var(--teal);">${escapeHtml(ev.action)}</strong>
                   <span class="caption tabular">${new Date(ev.occurredAt).toLocaleTimeString()}</span>
                 </div>
-                <div style="color: var(--muted); margin-bottom: 4px;">Actor: <strong>${ev.actorEmail}</strong> (${ev.actorType}) • Entity: ${ev.entityType} #${ev.entityId}</div>
-                <div class="mono-ref caption" style="font-size: 11px; word-break: break-all; opacity: 0.85;">SHA-256: ${ev.payloadHash ? ev.payloadHash.slice(0, 32) + '...' : 'GENESIS'}</div>
+                <div style="color: var(--muted); margin-bottom: 4px;">Actor: <strong>${escapeHtml(ev.actorEmail)}</strong> (${escapeHtml(ev.actorType)}) • Entity: ${escapeHtml(ev.entityType)} #${escapeHtml(ev.entityId)}</div>
+                <div class="mono-ref caption" style="font-size: 11px; word-break: break-all; opacity: 0.85;">SHA-256: ${escapeHtml(ev.payloadHash ? ev.payloadHash.slice(0, 32) + '...' : 'GENESIS')}</div>
               </div>
             `).join('');
           }
@@ -3293,9 +3314,11 @@
           const dEl = document.getElementById('m-dollars-saved');
           if (dEl) dEl.innerText = `$${d.estimatedSavingsUsd.toLocaleString()}`;
           const aEl = document.getElementById('m-ai-accuracy');
-          if (aEl) aEl.innerText = `${d.aiAccuracyScore}%`;
+          if (aEl) aEl.innerText = d.aiAccuracyScore !== null ? `${d.aiAccuracyScore}%` : 'Calibrating';
           const topBtn = document.getElementById('top-hours-saved');
-          if (topBtn) topBtn.innerText = `⚡ ${d.hoursSaved} hrs saved ($${d.estimatedSavingsUsd.toLocaleString()})`;
+          if (topBtn) {
+            topBtn.innerHTML = `<span class="icon" style="margin-right: 3px; vertical-align: -1px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>${d.hoursSaved} hrs saved ($${d.estimatedSavingsUsd.toLocaleString()})`;
+          }
 
           if (d.channelBreakdown) {
             const em = document.getElementById('ch-email');
@@ -3323,17 +3346,17 @@
           container.innerHTML = json.data.map(sop => `
             <div style="background: var(--surface-trans); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 18px; margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="chip chip-mint tabular" style="font-weight: 700;">${sop.id}</span>
-                <span class="caption">Version ${sop.version} · Effective ${sop.effectiveDate}</span>
+                <span class="chip chip-mint tabular" style="font-weight: 700;">${escapeHtml(sop.id)}</span>
+                <span class="caption">Version ${escapeHtml(sop.version)} · Effective ${escapeHtml(sop.effectiveDate)}</span>
               </div>
-              <h3 style="font-size: 16px; margin-bottom: 4px;">${sop.title}</h3>
-              <p class="caption" style="margin-bottom: 12px;">Department: ${sop.department}</p>
+              <h3 style="font-size: 16px; margin-bottom: 4px;">${escapeHtml(sop.title)}</h3>
+              <p class="caption" style="margin-bottom: 12px;">Department: ${escapeHtml(sop.department)}</p>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 ${sop.steps.map(s => `
                   <div style="display: flex; gap: 10px; font-size: 13.5px; line-height: 1.4;">
-                    <span class="tabular font-bold" style="color: var(--teal); min-width: 20px;">${s.stepNumber}.</span>
+                    <span class="tabular font-bold" style="color: var(--teal); min-width: 20px;">${escapeHtml(s.stepNumber)}.</span>
                     <div>
-                      <strong>${s.action}</strong>: <span style="color: var(--muted);">${s.rule}</span>
+                      <strong>${escapeHtml(s.action)}</strong>: <span style="color: var(--muted);">${escapeHtml(s.rule)}</span>
                     </div>
                   </div>
                 `).join('')}
@@ -3493,8 +3516,8 @@
           toggleMailSelect(firstId);
         }
       }
-      // a for approving first item if on today or approve
-      else if (e.key.toLowerCase() === 'a' && (state.activeVerb === 'today' || state.activeVerb === 'approve')) {
+      // Shift+A for approving first item if on today or approve
+      else if (e.key.toLowerCase() === 'a' && (e.shiftKey || e.ctrlKey) && (state.activeVerb === 'today' || state.activeVerb === 'approve')) {
         if (state.approvals && state.approvals.length > 0) {
           optimisticApprove(state.approvals[0].id);
         }

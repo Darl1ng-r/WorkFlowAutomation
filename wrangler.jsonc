@@ -8,7 +8,8 @@
     {
       "binding": "DB",
       "database_name": "office_os_db",
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
     }
   ],
   "r2_buckets": [
@@ -29,13 +30,28 @@
   ],
   "triggers": {
     "crons": [
-      "* * * * *",
-      "0 8 * * *"
+      "0 5 * * *"
     ]
   },
   "vars": {
     "ENVIRONMENT": "development",
     "LOG_LEVEL": "debug",
     "DEFAULT_AUTONOMY_LEVEL": "L2"
+  },
+  "env": {
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "LOG_LEVEL": "debug",
+        "DEFAULT_AUTONOMY_LEVEL": "L2"
+      }
+    },
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "production",
+        "LOG_LEVEL": "info",
+        "DEFAULT_AUTONOMY_LEVEL": "L2"
+      }
+    }
   }
 }

@@ -7,6 +7,8 @@ import {
   IVisitorRepository,
   IAuditRepository,
   ISequenceRepository,
+  ISupplyRepository,
+  IRoomBookingRepository,
 } from "@domain/repositories";
 import {
   D1CorrespondenceRepository,
@@ -17,6 +19,8 @@ import {
   D1VisitorRepository,
   D1AuditRepository,
   D1SequenceRepository,
+  D1SupplyRepository,
+  D1RoomBookingRepository,
 } from "./db/d1-repositories";
 import { RegisterCorrespondenceUseCase } from "@application/use-cases/register-correspondence.use-case";
 import { ProcessInvoiceUseCase } from "@application/use-cases/process-invoice.use-case";
@@ -35,6 +39,8 @@ export interface ServiceContainer {
   visitorRepo: IVisitorRepository;
   auditRepo: IAuditRepository;
   sequenceRepo: ISequenceRepository;
+  supplyRepo: ISupplyRepository;
+  roomBookingRepo: IRoomBookingRepository;
   db?: D1Database | undefined;
   storagePort?: IStoragePort | undefined;
   notificationPort?: INotificationPort | undefined;
@@ -64,6 +70,8 @@ export function createContainerFromEnv(env: {
   const obligationRepo = new D1ObligationRepository(env.DB);
   const visitorRepo = new D1VisitorRepository(env.DB);
   const auditRepo = new D1AuditRepository(env.DB);
+  const supplyRepo = new D1SupplyRepository(env.DB);
+  const roomBookingRepo = new D1RoomBookingRepository(env.DB);
 
   let storagePort: IStoragePort | undefined;
   if (env.VAULT) {
@@ -127,6 +135,8 @@ export function createContainerFromEnv(env: {
     visitorRepo,
     auditRepo,
     sequenceRepo,
+    supplyRepo,
+    roomBookingRepo,
     storagePort,
     crmPort,
     registerCorrespondence,
