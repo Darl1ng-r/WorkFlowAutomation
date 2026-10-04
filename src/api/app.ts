@@ -12,6 +12,7 @@ import { createRoomsRouter } from "./routes/rooms.router";
 import { createAuditRouter } from "./routes/audit.router";
 import { createTelemetryRouter } from "./routes/telemetry.router";
 import { createSopRouter } from "./routes/sop.router";
+import { createSuppliesRouter } from "./routes/supplies.router";
 import { CLIENT_HTML } from "@client/html-bundle";
 
 export interface AppOptions {
@@ -63,6 +64,7 @@ export function createApp(options: AppOptions): Hono {
   app.route("/api/audit", createAuditRouter(container));
   app.route("/api/metrics", createTelemetryRouter(container));
   app.route("/api/system", createSopRouter());
+  app.route("/api/supplies", createSuppliesRouter(container));
 
   return app;
 }

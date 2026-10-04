@@ -147,10 +147,24 @@ export interface CallLogEntity {
   createdAt: string;
 }
 
+export interface SupplyItemEntity {
+  id: string;
+  name: string;
+  category: "STATIONERY" | "PANTRY" | "PRINTING" | "CLEANING" | "IT_ACCESSORY";
+  currentStock: number;
+  parLevel: number;
+  unit: string;
+  supplier: string;
+  unitPrice: number;
+  currency: string;
+  status: "OK" | "LOW_STOCK" | "REORDER_TRIGGERED";
+  updatedAt: string;
+}
+
 export interface ApprovalEntity {
   id: string;
   workflowRunId: string;
-  targetEntityType: "INVOICE" | "CORRESPONDENCE" | "OBLIGATION" | "OUTBOUND_LETTER";
+  targetEntityType: "INVOICE" | "CORRESPONDENCE" | "OBLIGATION" | "OUTBOUND_LETTER" | "SUPPLY_REORDER";
   targetEntityId: string;
   proposedAction: string;
   proposedPayload: Record<string, unknown>;

@@ -335,4 +335,47 @@ describe("API End-to-End Integration Tests", () => {
     expect(slot.status).toBe("BOOKED");
     expect(slot.title).toBe("Client Contract Signing");
   });
+
+  it("GET /api/supplies and POST /api/supplies/:id/consume should manage par-level reorders", async () => {
+    // 1. List supplies
+    const listRes = await app.request("/api/supplies");
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as any;
+    expect(listBody.success).toBe(true);
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(listBody.data.length).toBeGreaterThanOrEqual(4);
+
+    // 2. Consume coffee beans (par level is 3, initial is 2) -> triggers reorder approval
+    const consumeRes = await app.request("/api/supplies/sup-002/consume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity: 1 }),
+    });
+    expect(consumeRes.status).toBe(200);
+    const consumeBody = (await consumeRes.json()) as any;
+    expect(consumeBody.success).toBe(true);
+    expect(consumeBody.data.reorderTriggered).toBe(true);
+
+    // 3. Verify approval record was created
+    const appRes = await app.request("/api/approvals");
+    const appBody = (await appRes.json()) as any;
+    const reorderApproval = appBody.data.find(
+      (a: any) => a.targetEntityType === "SUPPLY_REORDER" && a.targetEntityId === "sup-002"
+    );
+    expect(reorderApproval).toBeDefined();
+    expect(reorderApproval.proposedPayload.name).toContain("Espresso Whole Beans");
+  });
+
+  it("GET /api/metrics/monthly-report should build live executive report from real data", async () => {
+    const res = await app.request("/api/metrics/monthly-report");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.reportTitle).toContain("Office OS Monthly Report");
+    expect(typeof body.data.hoursSaved).toBe("number");
+    expect(typeof body.data.estimatedSavingsUsd).toBe("number");
+    expect(body.data.markdownMemo).toContain("Executive Monthly Operations Progress Report");
+    expect(body.data.markdownMemo).toContain("Total Labor Hours Saved");
+    expect(body.data.markdownMemo).toContain("AI Extraction Accuracy");
+  });
 });
