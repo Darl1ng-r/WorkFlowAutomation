@@ -49,5 +49,83 @@ export function createKioskRouter(container: ServiceContainer) {
     return c.json(successResponse(activeVisitors));
   });
 
+  // POST /api/kiosk/ai-parse - Front Desk AI Receptionist Walk-in & Badge Parser
+  router.post("/ai-parse", async (c) => {
+    const body = await c.req.json();
+    const notes = String(body.notes ?? "");
+    const autoCheckIn = Boolean(body.autoCheckIn ?? false);
+
+    if (!notes || notes.trim().length < 5) {
+      return c.json(
+        {
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "Visitor notes or transcript must be at least 5 characters." },
+        },
+        400
+      );
+    }
+
+    const parsed = await container.aiOrchestrator.parseVisitorNotes(notes);
+
+    if (autoCheckIn) {
+      const visitor = await container.visitorCheckIn.execute({
+        dto: {
+          fullName: parsed.fullName,
+          company: parsed.company,
+          email: parsed.email,
+          phone: parsed.phone,
+          hostEmployeeEmail: parsed.hostEmployeeEmail,
+          purpose: parsed.purpose,
+          ndaSigned: parsed.ndaSigned,
+        },
+      });
+
+      return c.json(
+        successResponse({
+          visitor,
+          parsed,
+          checkedIn: true,
+          message: `Visitor ${visitor.fullName} checked in under badge #${visitor.badgeNumber}. Host alerted at ${visitor.hostEmployeeEmail}.`,
+        }),
+        201
+      );
+    }
+
+    return c.json(
+      successResponse({
+        parsed,
+        checkedIn: false,
+        message: "Visitor details successfully parsed from notes.",
+      })
+    );
+  });
+
+  // GET /api/kiosk/samples - Sample walk-in visitor scenarios for quick testing
+  router.get("/samples", (c) => {
+    return c.json(
+      successResponse([
+        {
+          id: "sample-partner",
+          title: "Executive Partner Meeting",
+          notes:
+            "Visitor Sarah Connor from Cyberdyne Systems (+1 415 555 2671, sconnor@cyberdyne.io). Here to see Marcus (marcus@company.com) for Q4 AI Architecture Review. NDA signed. Badge 42.",
+        },
+        {
+          id: "sample-vendor",
+          title: "Equipment Maintenance Inspector",
+          notes:
+            "Ahmed Al-Mansoor from Otis Elevator & Safety (+971 50 123 4567). Visiting Facilities Lead Omar (omar@company.com) for quarterly elevator safety certification. Badge 88.",
+        },
+        {
+          id: "sample-candidate",
+          title: "Senior Engineering Candidate",
+          notes:
+            "Candidate David Chen (david.chen@gmail.com, 555-0199). Here for on-site interviews with Engineering Manager Layla (layla@company.com). Purpose: Staff Systems Architect Interview. Badge 15.",
+        },
+      ])
+    );
+  });
+
   return router;
 }
+

@@ -5,6 +5,7 @@ import {
   IApprovalRepository,
   IObligationRepository,
   IVisitorRepository,
+  ICallLogRepository,
   IAuditRepository,
   ISequenceRepository,
   ISupplyRepository,
@@ -17,6 +18,7 @@ import {
   D1ApprovalRepository,
   D1ObligationRepository,
   D1VisitorRepository,
+  D1CallLogRepository,
   D1AuditRepository,
   D1SequenceRepository,
   D1SupplyRepository,
@@ -28,6 +30,7 @@ import { DecideApprovalUseCase } from "@application/use-cases/decide-approval.us
 import { VisitorCheckInUseCase } from "@application/use-cases/visitor-check-in.use-case";
 import { CheckExpiringObligationsUseCase } from "@application/use-cases/check-expiring-obligations.use-case";
 import { OrchestrateInboundEmailUseCase } from "@application/use-cases/orchestrate-inbound-email.use-case";
+import { OrchestrateInboundScanUseCase } from "@application/use-cases/orchestrate-inbound-scan.use-case";
 import { OfficeAIOrchestrator } from "./ai/office-ai-orchestrator";
 import { INotificationPort, IStoragePort, ICrmPort } from "@application/ports";
 import { InMemoryCrmAdapter } from "./crm/hubspot-crm-adapter";
@@ -39,6 +42,7 @@ export interface ServiceContainer {
   approvalRepo: IApprovalRepository;
   obligationRepo: IObligationRepository;
   visitorRepo: IVisitorRepository;
+  callLogRepo: ICallLogRepository;
   auditRepo: IAuditRepository;
   sequenceRepo: ISequenceRepository;
   supplyRepo: ISupplyRepository;
@@ -56,7 +60,9 @@ export interface ServiceContainer {
   visitorCheckIn: VisitorCheckInUseCase;
   checkExpiringObligations: CheckExpiringObligationsUseCase;
   orchestrateInboundEmail: OrchestrateInboundEmailUseCase;
+  orchestrateInboundScan: OrchestrateInboundScanUseCase;
 }
+
 
 /**
  * Creates a ServiceContainer from Cloudflare Workers Environment bindings.
@@ -73,6 +79,7 @@ export function createContainerFromEnv(env: {
   const approvalRepo = new D1ApprovalRepository(env.DB);
   const obligationRepo = new D1ObligationRepository(env.DB);
   const visitorRepo = new D1VisitorRepository(env.DB);
+  const callLogRepo = new D1CallLogRepository(env.DB);
   const auditRepo = new D1AuditRepository(env.DB);
   const supplyRepo = new D1SupplyRepository(env.DB);
   const roomBookingRepo = new D1RoomBookingRepository(env.DB);
@@ -141,6 +148,15 @@ export function createContainerFromEnv(env: {
     roomBookingRepo
   );
 
+  const orchestrateInboundScan = new OrchestrateInboundScanUseCase(
+    aiOrchestrator,
+    correspondenceRepo,
+    sequenceRepo,
+    auditRepo,
+    approvalRepo,
+    obligationRepo
+  );
+
   return {
     db: env.DB,
     correspondenceRepo,
@@ -149,6 +165,7 @@ export function createContainerFromEnv(env: {
     approvalRepo,
     obligationRepo,
     visitorRepo,
+    callLogRepo,
     auditRepo,
     sequenceRepo,
     supplyRepo,
@@ -162,5 +179,7 @@ export function createContainerFromEnv(env: {
     visitorCheckIn,
     checkExpiringObligations,
     orchestrateInboundEmail,
+    orchestrateInboundScan,
   };
 }
+

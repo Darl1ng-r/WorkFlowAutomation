@@ -1,3 +1,5 @@
+import { DataClassification, DocumentType, ObligationType } from "@domain/types";
+
 export type EmailIntent =
   | "MEETING_REQUEST"
   | "INVOICE"
@@ -47,6 +49,69 @@ export interface InboundEmailPayload {
   body: string;
   receivedAt?: string | undefined;
 }
+
+export interface InboundScanPayload {
+  rawOcrText: string;
+  fileName?: string | undefined;
+  sourceSender?: string | undefined;
+  documentTypeHint?: string | undefined;
+  receivedDate?: string | undefined;
+}
+
+export interface ScanOrchestrationEntities {
+  docType: DocumentType;
+  sender: string;
+  recipient: string;
+  subject: string;
+  classification: DataClassification;
+  shelfLocation: string;
+  dueDate?: string | undefined;
+  isComplianceNotice?: boolean | undefined;
+  obligationType?: ObligationType | undefined;
+  expiresOn?: string | undefined;
+  financialAmount?: number | undefined;
+  currency?: string | undefined;
+}
+
+export interface ScanOrchestrationResult {
+  confidence: number;
+  summary: string;
+  autonomyLevel: "L0" | "L1" | "L2";
+  entities: ScanOrchestrationEntities;
+  recommendedAction: {
+    type:
+      | "REGISTER_OFFICIAL_LETTER"
+      | "REGISTER_AND_TRACK_OBLIGATION"
+      | "ROUTE_INVOICE_APPROVAL"
+      | "FILE_CONFIDENTIAL_RECORD";
+    description: string;
+  };
+}
+
+export interface ParsedVisitorInfo {
+  fullName: string;
+  company?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  hostEmployeeEmail: string;
+  purpose: string;
+  badgeNumber: string;
+  ndaSigned: boolean;
+  confidence: number;
+}
+
+export interface ParsedCallInfo {
+  callerNumber: string;
+  callerName?: string | undefined;
+  direction: "INBOUND" | "OUTBOUND";
+  routedToUserEmail: string;
+  summary: string;
+  durationSeconds: number;
+  priority: "HIGH" | "NORMAL" | "LOW";
+  actionRequired?: string | undefined;
+  confidence: number;
+}
+
 
 /**
  * Intelligent AI Orchestrator:
@@ -307,4 +372,402 @@ Return ONLY valid raw JSON with no markdown wrapping.`;
       },
     };
   }
+
+  /**
+   * Orchestrates intake of scanned physical letters, court summons, regulatory notices, and contracts.
+   */
+  public async orchestrateScan(scan: InboundScanPayload): Promise<ScanOrchestrationResult> {
+    const text = scan.rawOcrText.trim();
+    const lower = text.toLowerCase();
+
+    // 1. Legal / Court Notice / Judicial Order
+    if (
+      lower.includes("court") ||
+      lower.includes("judicial") ||
+      lower.includes("summons") ||
+      lower.includes("subpoena") ||
+      lower.includes("legal notice") ||
+      lower.includes("ministry of justice") ||
+      lower.includes("attorney") ||
+      lower.includes("advocate")
+    ) {
+      const sender =
+        scan.sourceSender ||
+        (lower.includes("ministry of justice")
+          ? "Ministry of Justice"
+          : "Civil Court of First Instance");
+      const dueDate =
+        new Date(Date.now() + 15 * 86400000).toISOString().split("T")[0] ?? "2026-10-20";
+      return {
+        confidence: 0.96,
+        summary: `Judicial Notice from ${sender}. Legal response deadline: ${dueDate}.`,
+        autonomyLevel: "L2", // Legal notices require human verification
+        entities: {
+          docType: "OFFICIAL_LETTER",
+          sender,
+          recipient: "Chief Legal Counsel & General Management",
+          subject: scan.fileName
+            ? `Scanned Notice: ${scan.fileName}`
+            : "Official Court Summons & Notice to Appear",
+          classification: "CONFIDENTIAL",
+          shelfLocation: "Safe Box 1, Shelf A",
+          dueDate,
+          isComplianceNotice: true,
+          obligationType: "EQUIPMENT_PERMIT",
+          expiresOn: dueDate,
+        },
+        recommendedAction: {
+          type: "FILE_CONFIDENTIAL_RECORD",
+          description:
+            "Archive in Safe Box 1, alert General Counsel immediately, and record mandatory response deadline in Obligations.",
+        },
+      };
+    }
+
+    // 2. Regulatory Compliance / Municipality / Ministry Environmental or Building
+    if (
+      lower.includes("municipality") ||
+      lower.includes("ministry") ||
+      lower.includes("compliance") ||
+      lower.includes("inspection") ||
+      lower.includes("safety") ||
+      lower.includes("trade license") ||
+      lower.includes("chamber of commerce") ||
+      lower.includes("civil defence")
+    ) {
+      let sender = scan.sourceSender || "Greater Amman Municipality";
+      if (lower.includes("civil defence") || lower.includes("defense"))
+        sender = "General Directorate of Civil Defence";
+      else if (lower.includes("industry") || lower.includes("trade"))
+        sender = "Ministry of Industry & Trade";
+      else if (lower.includes("climate") || lower.includes("environment"))
+        sender = "Ministry of Climate Change & Environment";
+
+      const expiryDate =
+        new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] ?? "2026-11-05";
+
+      return {
+        confidence: 0.94,
+        summary: `Statutory Regulatory Notice from ${sender}. Compliance window ends ${expiryDate}.`,
+        autonomyLevel: "L0",
+        entities: {
+          docType: "OFFICIAL_LETTER",
+          sender,
+          recipient: "Operations & Facilities Directorate",
+          subject: scan.fileName
+            ? `Scanned Regulatory Filing: ${scan.fileName}`
+            : "Annual Municipal & Safety Compliance Audit Notice",
+          classification: "INTERNAL",
+          shelfLocation: "Cabinet 1, Shelf B, Box 2",
+          dueDate: expiryDate,
+          isComplianceNotice: true,
+          obligationType: "TRADE_LICENCE",
+          expiresOn: expiryDate,
+        },
+        recommendedAction: {
+          type: "REGISTER_AND_TRACK_OBLIGATION",
+          description:
+            "Auto-sequence into Central Registry, file in Cabinet 1 Shelf B, and establish active 30-day tracking in Obligations.",
+        },
+      };
+    }
+
+    // 3. Physical Invoices / Paper Bills / Receipts
+    if (
+      lower.includes("invoice") ||
+      lower.includes("tax invoice") ||
+      lower.includes("bill to") ||
+      lower.includes("vat reg") ||
+      lower.includes("amount due") ||
+      lower.includes("total amount") ||
+      lower.includes("receipt")
+    ) {
+      let amount = 380.0;
+      const amtMatch = text.match(
+        /(?:total|amount|due|balance|jod|usd|\$|€|£)\s*[:=]?\s*([0-9,]+(?:\.[0-9]{2})?)/i
+      );
+      if (amtMatch && amtMatch[1]) {
+        const parsed = parseFloat(amtMatch[1].replace(/,/g, ""));
+        if (!isNaN(parsed) && parsed > 0) amount = parsed;
+      }
+      const isL2 = amount > 250;
+      const vendor =
+        scan.sourceSender ||
+        (lower.includes("petroleum") ? "National Fuel & Logistics" : "Apex Facilities Services");
+
+      return {
+        confidence: 0.93,
+        summary: `Scanned Physical Invoice from ${vendor} for USD ${amount.toFixed(2)}.`,
+        autonomyLevel: isL2 ? "L2" : "L0",
+        entities: {
+          docType: "INVOICE",
+          sender: vendor,
+          recipient: "Accounts Payable",
+          subject: `Physical Invoice: ${vendor}`,
+          classification: "INTERNAL",
+          shelfLocation: "Cabinet 1, Shelf B",
+          financialAmount: amount,
+          currency: "USD",
+          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
+        },
+        recommendedAction: {
+          type: "ROUTE_INVOICE_APPROVAL",
+          description: isL2
+            ? "Invoice exceeds $250. Sequenced, filed to Cabinet 1 Shelf B, and routed to Approvals for operator authorization."
+            : "Routine operational receipt. Automatically approved and archived.",
+        },
+      };
+    }
+
+    // 4. Stamped Bank Guarantees / Contracts / Tenancy
+    if (
+      lower.includes("bank guarantee") ||
+      lower.includes("letter of credit") ||
+      lower.includes("lease contract") ||
+      lower.includes("tenancy agreement") ||
+      lower.includes("surety bond")
+    ) {
+      const sender = scan.sourceSender || "Standard Chartered Commercial Banking";
+      const expiry =
+        new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] ?? "2027-10-05";
+
+      return {
+        confidence: 0.95,
+        summary: `Executed Commercial Contract / Bank Instrument from ${sender}. Valid until ${expiry}.`,
+        autonomyLevel: "L0",
+        entities: {
+          docType: "CONTRACT",
+          sender,
+          recipient: "Finance Directorate",
+          subject: "Executed Bank Performance Guarantee & Collateral Deed",
+          classification: "RESTRICTED",
+          shelfLocation: "Safe Box 2",
+          dueDate: expiry,
+          isComplianceNotice: true,
+          obligationType: "INSURANCE",
+          expiresOn: expiry,
+        },
+        recommendedAction: {
+          type: "REGISTER_AND_TRACK_OBLIGATION",
+          description:
+            "Archive in High-Security Safe Box 2, log tamper-evident cryptographic hash, and track 1-year validity in Obligations.",
+        },
+      };
+    }
+
+    // Default: General Scanned Correspondence
+    const sender = scan.sourceSender || "External Correspondent";
+    return {
+      confidence: 0.89,
+      summary: `Scanned Physical Document from ${sender}.`,
+      autonomyLevel: "L0",
+      entities: {
+        docType: "OFFICIAL_LETTER",
+        sender,
+        recipient: "General Office Reception",
+        subject: scan.fileName
+          ? `Scanned Document: ${scan.fileName}`
+          : "Inbound Scanned Physical Letter",
+        classification: "INTERNAL",
+        shelfLocation: "Cabinet 2, Shelf B, Box 1",
+      },
+      recommendedAction: {
+        type: "REGISTER_OFFICIAL_LETTER",
+        description:
+          "Assign gapless reference number, index to Central Registry, and place in Cabinet 2 Shelf B.",
+      },
+    };
+  }
+
+  /**
+   * Front Desk AI Receptionist Assistant:
+   * Parses conversational notes, audio transcripts, or business card scans into structured visitor check-in data.
+   */
+  public async parseVisitorNotes(notes: string): Promise<ParsedVisitorInfo> {
+    const trimmed = notes.trim();
+
+    // 1. Phone extraction
+    let phone: string | undefined;
+    const phonePlusMatch = trimmed.match(/\+[\d\s-]{7,20}\d/);
+    if (phonePlusMatch) {
+      phone = phonePlusMatch[0].trim();
+    } else {
+      const phoneMatch = trimmed.match(/\b(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}\b/);
+      if (phoneMatch && phoneMatch[0].length >= 7) {
+        phone = phoneMatch[0].trim();
+      }
+    }
+
+
+    // 2. Email extraction
+    let email: string | undefined;
+    const emailMatch = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) {
+      email = emailMatch[0].toLowerCase();
+    }
+
+    // 3. Host employee extraction
+    let hostEmployeeEmail = "reception@company.com";
+    const hostEmailMatch = trimmed.match(
+      /(?:to see|visiting|host(?:ed)? by|meeting with)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i
+    );
+    if (hostEmailMatch && hostEmailMatch[1]) {
+      hostEmployeeEmail = hostEmailMatch[1].toLowerCase();
+    } else {
+      const hostNameMatch = trimmed.match(
+        /(?:to see|visiting|host(?:ed)? by|meeting with)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i
+      );
+      if (hostNameMatch && hostNameMatch[1]) {
+        const cleanedName = hostNameMatch[1].trim().toLowerCase().split(" ")[0];
+        hostEmployeeEmail = `${cleanedName}@company.com`;
+      }
+    }
+
+    // 4. Company extraction
+    let company: string | undefined;
+    const companyMatch = trimmed.match(
+      /(?:from|representing|company:?)\s+([A-Z][A-Za-z0-9&.\s]{2,25}(?:Corp|Inc|LLC|Ltd|Solutions|Systems|Enterprises|Logistics|Industries|Bank)?)/i
+    );
+    if (companyMatch && companyMatch[1]) {
+      company = companyMatch[1].trim();
+    }
+
+    // 5. Visitor Full Name extraction
+    let fullName = "Walk-in Guest";
+    const nameMatch = trimmed.match(
+      /(?:visitor|guest|name:?|dr\.?|mr\.?|ms\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i
+    );
+    if (nameMatch && nameMatch[1]) {
+      fullName = nameMatch[1].trim();
+    } else {
+      const fallbackNameMatch = trimmed.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+      if (fallbackNameMatch && fallbackNameMatch[1]) {
+        fullName = fallbackNameMatch[1].trim();
+      }
+    }
+
+    // 6. Purpose extraction
+    let purpose = "General Business Meeting";
+    const purposeMatch = trimmed.match(/(?:purpose:?|regarding|for|to discuss)\s+([^.,;\n]+)/i);
+    if (purposeMatch && purposeMatch[1]) {
+      purpose = purposeMatch[1].trim();
+    }
+
+    // 7. Badge number
+    let badgeNumber = `V-${Math.floor(100 + Math.random() * 900)}`;
+    const badgeMatch = trimmed.match(/badge\s*(?:#|no\.?|number)?\s*([a-z0-9-]+)/i);
+    if (badgeMatch && badgeMatch[1]) {
+      badgeNumber = badgeMatch[1].toUpperCase();
+    }
+
+    // 8. NDA
+    const ndaSigned = !trimmed.toLowerCase().includes("no nda");
+
+    return {
+      fullName,
+      company,
+      email,
+      phone,
+      hostEmployeeEmail,
+      purpose,
+      badgeNumber,
+      ndaSigned,
+      confidence: 0.92,
+    };
+  }
+
+  /**
+   * Front Desk AI Call Logger:
+   * Parses phone call transcripts or receptionist notes into structured call log records.
+   */
+  public async parseCallNotes(
+    notes: string,
+    defaultStaffEmail = "reception@company.com"
+  ): Promise<ParsedCallInfo> {
+    const trimmed = notes.trim();
+    const lower = trimmed.toLowerCase();
+
+    // 1. Direction
+    const direction: "INBOUND" | "OUTBOUND" =
+      lower.includes("outbound") || lower.includes("called out") || lower.includes("called client")
+        ? "OUTBOUND"
+        : "INBOUND";
+
+    // 2. Caller Phone
+    let callerNumber = "+971 4 000 0000";
+    const phonePlusMatch = trimmed.match(/\+[\d\s-]{7,20}\d/);
+    if (phonePlusMatch) {
+      callerNumber = phonePlusMatch[0].trim();
+    } else {
+      const phoneMatch = trimmed.match(/\b(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}\b/);
+      if (phoneMatch && phoneMatch[0].length >= 7) {
+        callerNumber = phoneMatch[0].trim();
+      }
+    }
+
+
+    // 3. Caller Name
+    let callerName: string | undefined;
+    const nameMatch = trimmed.match(
+      /(?:from|caller:?|called by)\s+(?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|eng\.?|engineer)\s+)?([A-Z][a-z]+(?:\s+[A-Za-z-]+)+)/i
+    );
+    if (nameMatch && nameMatch[1]) {
+      callerName = nameMatch[1].trim();
+    }
+
+
+    // 4. Routed staff email
+    let routedToUserEmail = defaultStaffEmail;
+    const emailMatch = trimmed.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) {
+      routedToUserEmail = emailMatch[0].toLowerCase();
+    } else {
+      const routedMatch = trimmed.match(
+        /(?:routed to|transferred to|for|directed to)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i
+      );
+      if (routedMatch && routedMatch[1]) {
+        const staffFirstName = routedMatch[1].trim().toLowerCase().split(" ")[0];
+        routedToUserEmail = `${staffFirstName}@company.com`;
+      }
+    }
+
+    // 5. Duration in seconds
+    let durationSeconds = 120;
+    const minMatch = trimmed.match(/(\d+)\s*(?:min|minute|m\b)/i);
+    const secMatch = trimmed.match(/(\d+)\s*(?:sec|second|s\b)/i);
+    if (minMatch || secMatch) {
+      const mins = minMatch && minMatch[1] ? parseInt(minMatch[1], 10) : 0;
+      const secs = secMatch && secMatch[1] ? parseInt(secMatch[1], 10) : 0;
+      durationSeconds = mins * 60 + secs;
+    }
+
+
+    // 6. Priority & action required
+    const isUrgent =
+      lower.includes("urgent") ||
+      lower.includes("emergency") ||
+      lower.includes("asap") ||
+      lower.includes("critical") ||
+      lower.includes("deadline") ||
+      lower.includes("court") ||
+      lower.includes("inspection");
+    const priority: "HIGH" | "NORMAL" | "LOW" = isUrgent ? "HIGH" : "NORMAL";
+
+    // 7. Summary
+    let summary = trimmed.slice(0, 200);
+    if (summary.length < trimmed.length) summary += "...";
+
+    return {
+      callerNumber,
+      callerName,
+      direction,
+      routedToUserEmail,
+      summary,
+      durationSeconds,
+      priority,
+      actionRequired: isUrgent ? "Immediate follow-up required" : undefined,
+      confidence: 0.91,
+    };
+  }
 }
+

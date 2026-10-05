@@ -9,6 +9,7 @@ import {
   InMemoryApprovalRepository,
   InMemoryObligationRepository,
   InMemoryVisitorRepository,
+  InMemoryCallLogRepository,
   InMemoryAuditRepository,
   InMemorySupplyRepository,
   InMemoryRoomBookingRepository,
@@ -20,7 +21,9 @@ import { DecideApprovalUseCase } from "@application/use-cases/decide-approval.us
 import { VisitorCheckInUseCase } from "@application/use-cases/visitor-check-in.use-case";
 import { CheckExpiringObligationsUseCase } from "@application/use-cases/check-expiring-obligations.use-case";
 import { OrchestrateInboundEmailUseCase } from "@application/use-cases/orchestrate-inbound-email.use-case";
+import { OrchestrateInboundScanUseCase } from "@application/use-cases/orchestrate-inbound-scan.use-case";
 import { OfficeAIOrchestrator } from "@infrastructure/ai/office-ai-orchestrator";
+
 
 describe("API End-to-End Integration Tests", () => {
   let app: ReturnType<typeof createApp>;
@@ -34,6 +37,7 @@ describe("API End-to-End Integration Tests", () => {
     const approvalRepo = new InMemoryApprovalRepository();
     const obligationRepo = new InMemoryObligationRepository();
     const visitorRepo = new InMemoryVisitorRepository();
+    const callLogRepo = new InMemoryCallLogRepository();
     const auditRepo = new InMemoryAuditRepository();
     const supplyRepo = new InMemorySupplyRepository();
     const roomBookingRepo = new InMemoryRoomBookingRepository();
@@ -73,6 +77,15 @@ describe("API End-to-End Integration Tests", () => {
       roomBookingRepo
     );
 
+    const orchestrateInboundScan = new OrchestrateInboundScanUseCase(
+      aiOrchestrator,
+      correspondenceRepo,
+      sequenceRepo,
+      auditRepo,
+      approvalRepo,
+      obligationRepo
+    );
+
     container = {
       sequenceRepo,
       correspondenceRepo,
@@ -81,6 +94,7 @@ describe("API End-to-End Integration Tests", () => {
       approvalRepo,
       obligationRepo,
       visitorRepo,
+      callLogRepo,
       auditRepo,
       supplyRepo,
       roomBookingRepo,
@@ -92,9 +106,11 @@ describe("API End-to-End Integration Tests", () => {
       visitorCheckIn,
       checkExpiringObligations,
       orchestrateInboundEmail,
+      orchestrateInboundScan,
     };
 
     app = createApp({ container });
+
   });
 
   it("GET /api/health should return 200 with system info", async () => {
@@ -667,4 +683,85 @@ describe("API End-to-End Integration Tests", () => {
     expect(body.data.resultPayload.timeSlot).toBe("14:00 - 15:00");
     expect(body.data.resultPayload.calendarEvent.status).toBe("confirmed");
   });
+
+  it("POST /api/calls and GET /api/calls should log and retrieve phone calls", async () => {
+    const createRes = await app.request("/api/calls", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        callerNumber: "+971 4 391 1111",
+        callerName: "Emirates Steel Procurement",
+        direction: "INBOUND",
+        routedToUserEmail: "fatima@company.com",
+        summary: "Inquired about supplier RFQ submission deadline for Q4 steel beams.",
+        durationSeconds: 150,
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const createBody = (await createRes.json()) as any;
+    expect(createBody.success).toBe(true);
+    expect(createBody.data.callerName).toBe("Emirates Steel Procurement");
+
+    const listRes = await app.request("/api/calls");
+    expect(listRes.status).toBe(200);
+    const listBody = (await listRes.json()) as any;
+    expect(listBody.success).toBe(true);
+    expect(listBody.data.length).toBeGreaterThanOrEqual(1);
+    expect(listBody.data[0].callerNumber).toBe("+971 4 391 1111");
+  });
+
+  it("POST /api/calls/ai-process should parse receptionist notes into structured call log", async () => {
+    const res = await app.request("/api/calls/ai-process", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        notes:
+          "Inbound call from Eng. Tariq Al-Hashemi (+971 4 212 5555) from Ministry of Industry. Followed up on safety compliance file #MOIAT-881. Routed to Omar (omar@company.com). Call lasted 3 minutes 40 seconds. Urgent follow-up required before Thursday.",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.call.callerNumber).toBe("+971 4 212 5555");
+    expect(body.data.call.routedToUserEmail).toBe("omar@company.com");
+    expect(body.data.parsed.priority).toBe("HIGH");
+  });
+
+  it("POST /api/kiosk/ai-parse should parse walk-in visitor notes and support auto-check-in", async () => {
+    const res = await app.request("/api/kiosk/ai-parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        notes:
+          "Visitor Sarah Connor from Cyberdyne Systems (+1 415 555 2671, sconnor@cyberdyne.io). Here to see Marcus (marcus@company.com) for Q4 AI Review. NDA signed. Badge 42.",
+        autoCheckIn: true,
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.checkedIn).toBe(true);
+    expect(body.data.visitor.fullName).toContain("Sarah Connor");
+    expect(body.data.visitor.hostEmployeeEmail).toBe("marcus@company.com");
+  });
+
+  it("POST /api/orchestrator/process-scan should process scanned physical letter and assign shelf", async () => {
+    const res = await app.request("/api/orchestrator/process-scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rawOcrText:
+          "UNITED ARAB EMIRATES MINISTRY OF CLIMATE CHANGE & ENVIRONMENT. Official Notice: Mandatory Air Quality & Emission Baseline Verification 2026. Ref: ENV-2026. Submit filings within 30 days.",
+        fileName: "MOCCAE_Notice_2026.pdf",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as any;
+    expect(body.success).toBe(true);
+    expect(body.data.correspondence.channel).toBe("SCAN");
+    expect(body.data.correspondence.physicalLocation).toContain("Cabinet 1, Shelf B");
+    expect(body.data.referenceNumber).toMatch(/^IN-\d{4}-\d{6}$/);
+    expect(body.data.obligationCreated).toBeDefined();
+  });
 });
+

@@ -14,7 +14,9 @@ import { createTelemetryRouter } from "./routes/telemetry.router";
 import { createSopRouter } from "./routes/sop.router";
 import { createSuppliesRouter } from "./routes/supplies.router";
 import { createOrchestratorRouter } from "./routes/orchestrator.router";
+import { createCallsRouter } from "./routes/calls.router";
 import { CLIENT_HTML } from "@client/html-bundle";
+
 
 export interface AppOptions {
   container: ServiceContainer;
@@ -64,8 +66,10 @@ export function createApp(options: AppOptions): Hono {
     );
   });
 
-  // Public kiosk check-in endpoint (allow visitors to check in at front desk tablet)
+  // Public kiosk check-in endpoints (allow visitors to check in at front desk tablet)
   app.use("/api/kiosk/check-in", authMiddleware({ allowKiosk: true }));
+  app.use("/api/kiosk/ai-parse", authMiddleware({ allowKiosk: true }));
+  app.use("/api/kiosk/samples", authMiddleware({ allowKiosk: true }));
 
   // Authenticated corporate endpoints (gated with authMiddleware across all sub-paths)
   app.use("*", async (c, next) => {
@@ -79,6 +83,7 @@ export function createApp(options: AppOptions): Hono {
   const kioskRouter = createKioskRouter(container);
   app.route("/api/kiosk", kioskRouter);
   app.route("/api/visitors", kioskRouter);
+  app.route("/api/calls", createCallsRouter(container));
   app.route("/api/correspondence", createCorrespondenceRouter(container));
   app.route("/api/invoices", createInvoicesRouter(container));
   app.route("/api/approvals", createApprovalsRouter(container));
@@ -95,3 +100,4 @@ export function createApp(options: AppOptions): Hono {
 
   return app;
 }
+

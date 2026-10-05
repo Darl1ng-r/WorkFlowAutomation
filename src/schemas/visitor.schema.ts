@@ -14,5 +14,12 @@ export const VisitorCheckOutSchema = z.object({
   visitorId: z.string().uuid("Valid visitor ID required"),
 });
 
+export const VisitorAIParseSchema = z.object({
+  notes: z.string().min(5, "Visitor notes or transcript required"),
+  autoCheckIn: z.boolean().optional().default(false),
+});
+
 export type VisitorCheckInDTO = z.infer<typeof VisitorCheckInSchema>;
 export type VisitorCheckOutDTO = z.infer<typeof VisitorCheckOutSchema>;
+export type VisitorAIParseDTO = z.infer<typeof VisitorAIParseSchema>;
+

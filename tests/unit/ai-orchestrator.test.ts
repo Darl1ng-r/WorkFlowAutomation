@@ -148,4 +148,50 @@ describe("OfficeAIOrchestrator & Inbound Email Orchestration", () => {
     expect(createdObligations[0].leadDays).toBe(30);
     expect(createdCorrespondence.length).toBe(1);
   });
+
+  it("should parse visitor notes into structured visitor entity fields", async () => {
+    const notes =
+      "Visitor Dr. Elena Rostova from Apex Global Logistics (+971 50 882 1923, elena.rostova@apexlogistics.com). Here to see Marcus (marcus@company.com) for Q4 Vendor Agreement discussion. NDA signed. Badge 104.";
+
+    const parsed = await orchestrator.parseVisitorNotes(notes);
+
+    expect(parsed.fullName).toContain("Elena Rostova");
+    expect(parsed.company).toBe("Apex Global Logistics");
+    expect(parsed.phone).toBe("+971 50 882 1923");
+    expect(parsed.email).toBe("elena.rostova@apexlogistics.com");
+    expect(parsed.hostEmployeeEmail).toBe("marcus@company.com");
+    expect(parsed.badgeNumber).toBe("104");
+    expect(parsed.ndaSigned).toBe(true);
+  });
+
+  it("should parse phone call notes into structured call log with priority", async () => {
+    const notes =
+      "Inbound call from Eng. Tariq Al-Hashemi (+971 4 212 5555) from Ministry of Industry. Followed up on safety compliance file. Routed to Omar (omar@company.com). Call lasted 3 minutes 40 seconds. Urgent follow-up needed before Thursday.";
+
+    const parsed = await orchestrator.parseCallNotes(notes);
+
+    expect(parsed.direction).toBe("INBOUND");
+    expect(parsed.callerNumber).toBe("+971 4 212 5555");
+    expect(parsed.callerName).toContain("Tariq Al-Hashemi");
+    expect(parsed.routedToUserEmail).toBe("omar@company.com");
+    expect(parsed.durationSeconds).toBe(220); // 3*60 + 40
+    expect(parsed.priority).toBe("HIGH");
+  });
+
+  it("should orchestrate scanned physical document with physical shelf assignment", async () => {
+    const scan = {
+      rawOcrText:
+        "UNITED ARAB EMIRATES MINISTRY OF CLIMATE CHANGE & ENVIRONMENT. Official Notice: Mandatory Air Quality & Emission Baseline Verification 2026. Ref: ENV-2026. Submit filings within 30 days.",
+      fileName: "MOCCAE_Notice.pdf",
+    };
+
+    const scanResult = await orchestrator.orchestrateScan(scan);
+
+    expect(scanResult.entities.docType).toBe("OFFICIAL_LETTER");
+    expect(scanResult.entities.shelfLocation).toContain("Cabinet 1, Shelf B");
+    expect(scanResult.entities.isComplianceNotice).toBe(true);
+    expect(scanResult.entities.obligationType).toBe("TRADE_LICENCE");
+    expect(scanResult.autonomyLevel).toBe("L0");
+  });
 });
+
