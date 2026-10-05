@@ -635,16 +635,18 @@ Return ONLY valid raw JSON with no markdown wrapping.`;
     // 5. Visitor Full Name extraction
     let fullName = "Walk-in Guest";
     const nameMatch = trimmed.match(
-      /(?:visitor|guest|name:?|dr\.?|mr\.?|ms\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i
+      /(?:visitor|guest|name:?)\s+(?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|eng\.?|engineer)\s+)?([A-Z][a-z]+(?:\s+[A-Za-z-]+)+)/i
     );
     if (nameMatch && nameMatch[1]) {
-      fullName = nameMatch[1].trim();
+      fullName = nameMatch[1].split(/\s+(?:from|with|to|at|visiting|regarding)\b/i)[0].trim();
     } else {
-      const fallbackNameMatch = trimmed.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
+      const fallbackNameMatch = trimmed.match(/(?:(?:dr\.?|mr\.?|mrs\.?|ms\.?|eng\.?|engineer)\s+)?([A-Z][a-z]+(?:\s+[A-Za-z-]+)+)/);
       if (fallbackNameMatch && fallbackNameMatch[1]) {
-        fullName = fallbackNameMatch[1].trim();
+        fullName = fallbackNameMatch[1].split(/\s+(?:from|with|to|at|visiting|regarding)\b/i)[0].trim();
       }
     }
+    fullName = fullName.replace(/^(?:dr\.?|mr\.?|mrs\.?|ms\.?|eng\.?|engineer)\s+/i, "").trim();
+
 
     // 6. Purpose extraction
     let purpose = "General Business Meeting";
